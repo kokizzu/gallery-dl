@@ -17,6 +17,7 @@ class ArcaliveExtractor(Extractor):
     """Base class for Arca.live extractors"""
     category = "arcalive"
     root = "https://arca.live"
+    useragent = "net.umanle.arca.android.playstore/0.9.75"
     request_interval = (0.5, 1.5)
 
     def _init(self):
@@ -77,7 +78,8 @@ class ArcalivePostExtractor(ArcaliveExtractor):
             src = text.unescape(src.partition("?")[0])
             if src[0] == "/":
                 if src[1] == "/":
-                    url = "https:" + src
+                    url = "https:" + src.replace(
+                        "//ac-p.namu", "//ac-o.namu", 1)
                 else:
                     url = self.root + src
             else:
@@ -149,9 +151,7 @@ class ArcaliveAPI():
         self.log = extractor.log
         self.root = extractor.root + "/api/app"
 
-        headers = extractor.session.headers
-        headers["User-Agent"] = "net.umanle.arca.android.playstore/0.9.75"
-        headers["X-Device-Token"] = util.generate_token(64)
+        extractor.session.headers["X-Device-Token"] = util.generate_token(64)
 
     def board(self, board_slug, params):
         endpoint = "/list/channel/" + board_slug

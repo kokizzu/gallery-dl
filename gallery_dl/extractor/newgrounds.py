@@ -8,7 +8,7 @@
 
 """Extractors for https://www.newgrounds.com/"""
 
-from .common import Extractor, Message
+from .common import Extractor, Message, Dispatch
 from .. import text, util, exception
 from ..cache import cache
 import itertools
@@ -198,7 +198,10 @@ class NewgroundsExtractor(Extractor):
         data["favorites"] = text.parse_int(extr(
             'id="faves_load">', '<').replace(",", ""))
         data["score"] = text.parse_float(extr('id="score_number">', '<'))
-        data["tags"] = text.split_html(extr('<dd class="tags">', '</dd>'))
+        data["tags"] = [
+            t for t in text.split_html(extr('<dd class="tags">', '</dd>'))
+            if "(function(" not in t
+        ]
         data["artist"] = [
             text.extr(user, '//', '.')
             for user in text.extract_iter(page, '<div class="item-user">', '>')
@@ -450,14 +453,10 @@ class NewgroundsGamesExtractor(NewgroundsExtractor):
     example = "https://USER.newgrounds.com/games"
 
 
-class NewgroundsUserExtractor(NewgroundsExtractor):
+class NewgroundsUserExtractor(Dispatch, NewgroundsExtractor):
     """Extractor for a newgrounds user profile"""
-    subcategory = "user"
     pattern = USER_PATTERN + r"/?$"
     example = "https://USER.newgrounds.com"
-
-    def initialize(self):
-        pass
 
     def items(self):
         base = self.user_root + "/"

@@ -8,7 +8,7 @@
 
 """Extractors for https://www.civitai.com/"""
 
-from .common import Extractor, Message
+from .common import Extractor, Message, Dispatch
 from .. import text, util, exception
 from ..cache import memcache
 import itertools
@@ -181,14 +181,20 @@ class CivitaiExtractor(Extractor):
                     "types", "fileFormats"})
 
     def _extract_meta_generation(self, image):
-        return self.api.image_generationdata(image["id"])
+        try:
+            return self.api.image_generationdata(image["id"])
+        except Exception as exc:
+            return self.log.debug("", exc_info=exc)
 
     def _extract_meta_version(self, item, is_post=True):
-        version_id = self._extract_version_id(item, is_post)
-        if version_id is None:
-            return None, None
-        version = self.api.model_version(version_id).copy()
-        return version.pop("model", None), version
+        try:
+            version_id = self._extract_version_id(item, is_post)
+            if version_id:
+                version = self.api.model_version(version_id).copy()
+                return version.pop("model", None), version
+        except Exception as exc:
+            self.log.debug("", exc_info=exc)
+        return None, None
 
     def _extract_version_id(self, item, is_post=True):
         version_id = item.get("modelVersionId")
@@ -366,7 +372,7 @@ class CivitaiSearchExtractor(CivitaiExtractor):
     example = "https://civitai.com/search/models?query=QUERY"
 
     def models(self):
-        params = text.parse_query(self.groups[0])
+        params = self._parse_query(self.groups[0])
         return self.api.models(params)
 
 
@@ -376,7 +382,7 @@ class CivitaiModelsExtractor(CivitaiExtractor):
     example = "https://civitai.com/models"
 
     def models(self):
-        params = text.parse_query(self.groups[0])
+        params = self._parse_query(self.groups[0])
         return self.api.models(params)
 
 
@@ -386,17 +392,23 @@ class CivitaiImagesExtractor(CivitaiExtractor):
     example = "https://civitai.com/images"
 
     def images(self):
-        params = text.parse_query(self.groups[0])
+        params = self._parse_query(self.groups[0])
         return self.api.images(params)
 
 
-class CivitaiUserExtractor(CivitaiExtractor):
-    subcategory = "user"
+class CivitaiPostsExtractor(CivitaiExtractor):
+    subcategory = "posts"
+    pattern = BASE_PATTERN + r"/posts(?:/?\?([^#]+))?(?:$|#)"
+    example = "https://civitai.com/posts"
+
+    def posts(self):
+        params = self._parse_query(self.groups[0])
+        return self.api.posts(params)
+
+
+class CivitaiUserExtractor(Dispatch, CivitaiExtractor):
     pattern = USER_PATTERN + r"/?(?:$|\?|#)"
     example = "https://civitai.com/user/USER"
-
-    def initialize(self):
-        pass
 
     def items(self):
         base = "{}/user/{}/".format(self.root, self.groups[0])
@@ -687,6 +699,7 @@ class CivitaiTrpcAPI():
                 "include"      : ["cosmetics"],
             })
 
+        params = self._type_params(params)
         return self._pagination(endpoint, params, meta)
 
     def user(self, username):

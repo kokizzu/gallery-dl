@@ -190,7 +190,7 @@ Consider all listed sites to potentially be NSFW.
 <tr>
     <td>Coomer</td>
     <td>https://coomer.su/</td>
-    <td>Favorites, Posts, User Profiles</td>
+    <td>Artists, Favorites, Posts, User Profiles</td>
     <td>Supported</td>
 </tr>
 <tr>
@@ -496,7 +496,7 @@ Consider all listed sites to potentially be NSFW.
 <tr>
     <td>Kemono</td>
     <td>https://kemono.su/</td>
-    <td>Discord Servers, Favorites, Posts, User Profiles</td>
+    <td>Artists, Discord Servers, Favorites, Posts, User Profiles</td>
     <td>Supported</td>
 </tr>
 <tr>
@@ -566,12 +566,6 @@ Consider all listed sites to potentially be NSFW.
     <td>Supported</td>
 </tr>
 <tr>
-    <td>MangaLife</td>
-    <td>https://manga4life.com/</td>
-    <td>Chapters, Manga</td>
-    <td></td>
-</tr>
-<tr>
     <td>MangaPark</td>
     <td>https://mangapark.net/</td>
     <td>Chapters, Manga</td>
@@ -580,12 +574,6 @@ Consider all listed sites to potentially be NSFW.
 <tr>
     <td>MangaRead</td>
     <td>https://mangaread.org/</td>
-    <td>Chapters, Manga</td>
-    <td></td>
-</tr>
-<tr>
-    <td>MangaSee</td>
-    <td>https://mangasee123.com/</td>
     <td>Chapters, Manga</td>
     <td></td>
 </tr>
@@ -706,7 +694,7 @@ Consider all listed sites to potentially be NSFW.
 <tr>
     <td>pixeldrain</td>
     <td>https://pixeldrain.com/</td>
-    <td>Albums, Files</td>
+    <td>Albums, Files, Filesystems</td>
     <td></td>
 </tr>
 <tr>
@@ -836,7 +824,7 @@ Consider all listed sites to potentially be NSFW.
     <td></td>
 </tr>
 <tr>
-    <td>SchaleNetwork</td>
+    <td>Schale Network</td>
     <td>https://niyaniya.moe/</td>
     <td>Favorites, Galleries, Search Results</td>
     <td></td>

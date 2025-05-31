@@ -172,7 +172,6 @@ class Extractor():
             try:
                 response = session.request(method, url, **kwargs)
             except requests.exceptions.ConnectionError as exc:
-                code = 0
                 try:
                     reason = exc.args[0].reason
                     cls = reason.__class__.__name__
@@ -180,13 +179,15 @@ class Extractor():
                     msg = " {}: {}".format(cls, (err or pre).lstrip())
                 except Exception:
                     msg = exc
+                code = 0
             except (requests.exceptions.Timeout,
                     requests.exceptions.ChunkedEncodingError,
                     requests.exceptions.ContentDecodingError) as exc:
                 msg = exc
                 code = 0
             except (requests.exceptions.RequestException) as exc:
-                raise exception.HttpError(exc)
+                msg = exc
+                break
             else:
                 code = response.status_code
                 if self._write_pages:
@@ -238,6 +239,9 @@ class Extractor():
                 self.sleep(seconds, "retry")
             tries += 1
 
+        if not fatal or fatal is ...:
+            self.log.warning(msg)
+            return util.NullResponse(url, msg)
         raise exception.HttpError(msg, response)
 
     def request_location(self, url, **kwargs):
@@ -590,11 +594,6 @@ class Extractor():
         return util.json_loads(text.extr(
             page, ' id="__NEXT_DATA__" type="application/json">', "</script>"))
 
-    def _prepare_ddosguard_cookies(self):
-        if not self.cookies.get("__ddg2", domain=self.cookies_domain):
-            self.cookies.set(
-                "__ddg2", util.generate_token(), domain=self.cookies_domain)
-
     def _cache(self, func, maxage, keyarg=None):
         #  return cache.DatabaseCacheDecorator(func, maxage, keyarg)
         return cache.DatabaseCacheDecorator(func, keyarg, maxage)
@@ -615,29 +614,6 @@ class Extractor():
             return ts
         fmt = self.config("date-format", "%Y-%m-%dT%H:%M:%S")
         return get("date-min", dmin), get("date-max", dmax)
-
-    def _dispatch_extractors(self, extractor_data, default=()):
-        """ """
-        extractors = {
-            data[0].subcategory: data
-            for data in extractor_data
-        }
-
-        include = self.config("include", default) or ()
-        if include == "all":
-            include = extractors
-        elif isinstance(include, str):
-            include = include.replace(" ", "").split(",")
-
-        result = [(Message.Version, 1)]
-        for category in include:
-            try:
-                extr, url = extractors[category]
-            except KeyError:
-                self.log.warning("Invalid include '%s'", category)
-            else:
-                result.append((Message.Queue, url, {"_extractor": extr}))
-        return iter(result)
 
     @classmethod
     def _dump(cls, obj):
@@ -794,6 +770,41 @@ class MangaExtractor(Extractor):
 
     def chapters(self, page):
         """Return a list of all (chapter-url, metadata)-tuples"""
+
+
+class Dispatch():
+    subcategory = "user"
+    cookies_domain = None
+    finalize = Extractor.finalize
+    skip = Extractor.skip
+
+    def __iter__(self):
+        return self.items()
+
+    def initialize(self):
+        pass
+
+    def _dispatch_extractors(self, extractor_data, default=()):
+        extractors = {
+            data[0].subcategory: data
+            for data in extractor_data
+        }
+
+        include = self.config("include", default) or ()
+        if include == "all":
+            include = extractors
+        elif isinstance(include, str):
+            include = include.replace(" ", "").split(",")
+
+        result = [(Message.Version, 1)]
+        for category in include:
+            try:
+                extr, url = extractors[category]
+            except KeyError:
+                self.log.warning("Invalid include '%s'", category)
+            else:
+                result.append((Message.Queue, url, {"_extractor": extr}))
+        return iter(result)
 
 
 class AsynchronousMixin():

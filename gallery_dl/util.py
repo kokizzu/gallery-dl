@@ -236,6 +236,34 @@ def to_string(value):
     return str(value)
 
 
+def to_datetime(value):
+    """Convert 'value' to a datetime object"""
+    if not value:
+        return EPOCH
+
+    if isinstance(value, datetime.datetime):
+        return value
+
+    if isinstance(value, str):
+        try:
+            if value[-1] == "Z":
+                # compat for Python < 3.11
+                value = value[:-1]
+            dt = datetime.datetime.fromisoformat(value)
+            if dt.tzinfo is None:
+                if dt.microsecond:
+                    dt = dt.replace(microsecond=0)
+            else:
+                # convert to naive UTC
+                dt = dt.astimezone(datetime.timezone.utc).replace(
+                    microsecond=0, tzinfo=None)
+            return dt
+        except Exception:
+            pass
+
+    return text.parse_timestamp(value, EPOCH)
+
+
 def datetime_to_timestamp(dt):
     """Convert naive UTC datetime to Unix timestamp"""
     return (dt - EPOCH) / SECOND
@@ -611,6 +639,28 @@ class NullContext():
         pass
 
 
+class NullResponse():
+    __slots__ = ("url", "reason")
+
+    ok = is_redirect = is_permanent_redirect = False
+    cookies = headers = history = links = {}
+    encoding = apparent_encoding = "utf-8"
+    content = b""
+    text = ""
+    status_code = 900
+    close = noop
+
+    def __init__(self, url, reason=""):
+        self.url = url
+        self.reason = str(reason)
+
+    def __str__(self):
+        return "900 " + self.reason
+
+    def json(self):
+        return {}
+
+
 class CustomNone():
     """None-style type that supports more operations than regular None"""
     __slots__ = ()
@@ -707,13 +757,20 @@ SECOND = datetime.timedelta(0, 1)
 WINDOWS = (os.name == "nt")
 SENTINEL = object()
 EXECUTABLE = getattr(sys, "frozen", False)
+SPECIAL_EXTRACTORS = {"oauth", "recursive", "generic"}
+
+EXTS_IMAGE = {"jpg", "jpeg", "png", "gif", "bmp", "svg", "psd", "ico",
+              "webp", "avif", "heic", "heif"}
+EXTS_VIDEO = {"mp4", "m4v", "mov", "webm", "mkv", "ogv", "flv", "avi", "wmv"}
+EXTS_ARCHIVE = {"zip", "rar", "7z", "tar", "gz", "bz2", "lzma", "xz"}
+
 USERAGENT = "gallery-dl/" + version.__version__
 USERAGENT_FIREFOX = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:{}.0) "
                      "Gecko/20100101 Firefox/{}.0").format(_ff_ver, _ff_ver)
 USERAGENT_CHROME = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{}.0.0.0 "
                     "Safari/537.36").format(_ff_ver - 2)
-SPECIAL_EXTRACTORS = {"oauth", "recursive", "generic"}
+
 GLOBALS = {
     "contains" : contains,
     "parse_int": text.parse_int,
@@ -727,6 +784,9 @@ GLOBALS = {
     "hash_md5" : md5,
     "std"      : ModuleProxy(),
     "re"       : re,
+    "exts_image"  : EXTS_IMAGE,
+    "exts_video"  : EXTS_VIDEO,
+    "exts_archive": EXTS_ARCHIVE,
 }
 
 

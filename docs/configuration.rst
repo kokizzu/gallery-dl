@@ -390,13 +390,13 @@ Default
         ``[E621]``,
         ``[foolfuuka]:search``,
         ``itaku``,
-        ``koharu``,
         ``newgrounds``,
         ``[philomena]``,
         ``pixiv:novel``,
         ``plurk``,
         ``poipiku`` ,
         ``pornpics``,
+        ``schalenetwork``,
         ``scrolller``,
         ``soundgasm``,
         ``urlgalleries``,
@@ -453,7 +453,7 @@ Description
     * ``atfbooru`` (*)
     * ``bluesky``
     * ``booruvar`` (*)
-    * ``coomerparty``
+    * ``coomer``
     * ``danbooru`` (*)
     * ``deviantart``
     * ``e621`` (*)
@@ -464,14 +464,14 @@ Description
     * ``idolcomplex``
     * ``imgbb``
     * ``inkbunny``
-    * ``kemonoparty``
-    * ``koharu``
+    * ``kemono``
     * ``mangadex``
     * ``mangoxo``
     * ``newgrounds``
     * ``nijie`` (R)
     * ``pillowfort``
     * ``sankaku``
+    * ``schalenetwork``
     * ``scrolller``
     * ``seiga``
     * ``subscribestar``
@@ -663,6 +663,7 @@ Type
 Default
     * ``"gallery-dl/VERSION"``: ``[Danbooru]``, ``mangadex``, ``weasyl``
     * ``"gallery-dl/VERSION (by mikf)"``: ``[E621]``
+    * ``"net.umanle.arca.android.playstore/0.9.75"``: ``arcalive``
     * ``"Patreon/72.2.28 (Android; Android 14; Scale/2.10)"``: ``patreon``
     * ``"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/LATEST.0.0.0 Safari/537.36"``: ``instagram``
     * ``"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:LATEST) Gecko/20100101 Firefox/LATEST"``: otherwise
@@ -683,7 +684,7 @@ extractor.*.browser
 Type
     ``string``
 Default
-    * ``"firefox"``: ``artstation``, ``fanbox``, ``mangasee``, ``twitter``
+    * ``"firefox"``: ``artstation``, ``fanbox``, ``twitter``
     * ``null``: otherwise
 Example
     * ``"chrome:macos"``
@@ -3105,8 +3106,8 @@ Description
     Download video files.
 
 
-extractor.kemonoparty.archives
-------------------------------
+extractor.kemono.archives
+-------------------------
 Type
     ``bool``
 Default
@@ -3118,8 +3119,8 @@ Description
     Note: This requires 1 additional HTTP request per ``archives`` file.
 
 
-extractor.kemonoparty.comments
-------------------------------
+extractor.kemono.comments
+-------------------------
 Type
     ``bool``
 Default
@@ -3130,8 +3131,8 @@ Description
     Note: This requires 1 additional HTTP request per post.
 
 
-extractor.kemonoparty.duplicates
---------------------------------
+extractor.kemono.duplicates
+---------------------------
 Type
     ``bool``
 Default
@@ -3143,8 +3144,8 @@ Description
     * ``false``: Ignore duplicates
 
 
-extractor.kemonoparty.dms
--------------------------
+extractor.kemono.dms
+--------------------
 Type
     ``bool``
 Default
@@ -3153,8 +3154,8 @@ Description
     Extract a user's direct messages as ``dms`` metadata.
 
 
-extractor.kemonoparty.announcements
------------------------------------
+extractor.kemono.announcements
+------------------------------
 Type
     ``bool``
 Default
@@ -3163,8 +3164,8 @@ Description
     Extract a user's announcements as ``announcements`` metadata.
 
 
-extractor.kemonoparty.endpoint
-------------------------------
+extractor.kemono.endpoint
+-------------------------
 Type
     ``string``
 Default
@@ -3190,8 +3191,8 @@ Description
         | Provides more metadata, but might not return a creator's first/last posts.
 
 
-extractor.kemonoparty.favorites
--------------------------------
+extractor.kemono.favorites
+--------------------------
 Type
     ``string``
 Default
@@ -3202,8 +3203,8 @@ Description
     Available types are ``artist``, and ``post``.
 
 
-extractor.kemonoparty.files
----------------------------
+extractor.kemono.files
+----------------------
 Type
     ``list`` of ``strings``
 Default
@@ -3214,8 +3215,8 @@ Description
     Available types are ``file``, ``attachments``, and ``inline``.
 
 
-extractor.kemonoparty.max-posts
--------------------------------
+extractor.kemono.max-posts
+--------------------------
 Type
     ``integer``
 Default
@@ -3224,8 +3225,8 @@ Description
     Limit the number of posts to download.
 
 
-extractor.kemonoparty.metadata
-------------------------------
+extractor.kemono.metadata
+-------------------------
 Type
     ``bool``
 Default
@@ -3234,8 +3235,8 @@ Description
     Extract ``username`` and ``user_profile`` metadata.
 
 
-extractor.kemonoparty.revisions
--------------------------------
+extractor.kemono.revisions
+--------------------------
 Type
     * ``bool``
     * ``string``
@@ -3249,15 +3250,15 @@ Description
     Note: This requires 1 additional HTTP request per post.
 
 
-extractor.kemonoparty.order-revisions
--------------------------------------
+extractor.kemono.order-revisions
+--------------------------------
 Type
     ``string``
 Default
     ``"desc"``
 Description
     Controls the order in which
-    `revisions <extractor.kemonoparty.revisions_>`__
+    `revisions <extractor.kemono.revisions_>`__
     are returned.
 
     * ``"asc"``: Ascending order (oldest first)
@@ -3291,8 +3292,8 @@ Description
     the first in the list gets chosen (usually `mp3`).
 
 
-extractor.koharu.cbz
---------------------
+extractor.schalenetwork.cbz
+---------------------------
 Type
     ``bool``
 Default
@@ -3304,8 +3305,8 @@ Description
     to be downloaded as individual image files.
 
 
-extractor.koharu.format
------------------------
+extractor.schalenetwork.format
+------------------------------
 Type
     * ``string``
     * ``list`` of ``strings``
@@ -3320,8 +3321,8 @@ Description
     | ``"780"``, ``"980"``, ``"1280"``, ``"1600"``, ``"0"`` (original)
 
 
-extractor.koharu.tags
----------------------
+extractor.schalenetwork.tags
+----------------------------
 Type
     ``bool``
 Default
@@ -3862,6 +3863,16 @@ Description
     Your account's `API key <https://pixeldrain.com/user/api_keys>`__
 
 
+extractor.pixeldrain.recursive
+------------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    Recursively download files from subfolders.
+
+
 extractor.pixiv.include
 -----------------------
 Type
@@ -4305,6 +4316,39 @@ Default
     ``false``
 Description
     Refresh download URLs before they expire.
+
+
+extractor.sankaku.tags
+----------------------
+Type
+    * ``bool``
+    * ``string``
+Default
+    ``false``
+Description
+    | Group ``tags`` by type and
+      provide them as ``tags_TYPE`` and ``tag_string_TYPE`` metadata fields,
+    | for example ``tags_artist`` and ``tags_character``.
+
+    ``true``
+        Enable general ``tags`` categories
+
+        Requires:
+
+        * 1 additional API request per 100 tags per post
+
+    ``"extended"``
+        Group ``tags`` by the new, extended tag category system
+        used on ``chan.sankakucomplex.com``
+
+        Requires:
+
+        * 1 additional HTTP request per post
+        * logged-in `cookies <extractor.*.cookies_>`__
+          to fetch full ``tags`` category data
+
+    ``false``
+        Disable ``tags`` categories
 
 
 extractor.sankakucomplex.embeds
@@ -7438,6 +7482,22 @@ Description
     Note: ``null`` references internal extractors defined in
     `extractor/__init__.py <https://github.com/mikf/gallery-dl/blob/master/gallery_dl/extractor/__init__.py#L12>`__
     or by `extractor.modules`_.
+
+
+extractor.category-map
+----------------------
+Type
+    ``object`` (`category` -> `category`)
+Default
+    .. code:: json
+
+        {
+            "coomerparty": "coomer",
+            "kemonoparty": "kemono",
+            "koharu"     : "schalenetwork"
+        }
+Description
+    A JSON ``object`` mapping category names to their replacements.
 
 
 globals
