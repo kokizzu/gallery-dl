@@ -9,12 +9,11 @@
 
 """Extractors for https://www.instagram.com/"""
 
-from .common import Extractor, Message
+from .common import Extractor, Message, Dispatch
 from .. import text, util, exception
 from ..cache import cache, memcache
 import itertools
 import binascii
-import re
 
 BASE_PATTERN = r"(?:https?://)?(?:www\.)?instagram\.com"
 USER_PATTERN = BASE_PATTERN + r"/(?!(?:p|tv|reel|explore|stories)/)([^/?#]+)"
@@ -39,7 +38,7 @@ class InstagramExtractor(Extractor):
     def _init(self):
         self.www_claim = "0"
         self.csrf_token = util.generate_token()
-        self._find_tags = re.compile(r"#\w+").findall
+        self._find_tags = util.re(r"#\w+").findall
         self._logged_in = True
         self._cursor = None
         self._user = None
@@ -430,17 +429,10 @@ class InstagramExtractor(Extractor):
                 user[key] = 0
 
 
-class InstagramUserExtractor(InstagramExtractor):
+class InstagramUserExtractor(Dispatch, InstagramExtractor):
     """Extractor for an Instagram user profile"""
-    subcategory = "user"
     pattern = USER_PATTERN + r"/?(?:$|[?#])"
     example = "https://www.instagram.com/USER/"
-
-    def initialize(self):
-        pass
-
-    def finalize(self):
-        pass
 
     def items(self):
         base = "{}/{}/".format(self.root, self.item)

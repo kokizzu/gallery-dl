@@ -20,6 +20,7 @@ import logging
 import datetime
 import requests
 import threading
+from xml.etree import ElementTree
 from requests.adapters import HTTPAdapter
 from .message import Message
 from .. import config, output, text, util, cache, exception
@@ -53,6 +54,9 @@ class Extractor():
         self.url = match.string
         self.match = match
         self.groups = match.groups()
+
+        if self.category in CATEGORY_MAP:
+            self.category = CATEGORY_MAP[self.category]
         self._cfgpath = ("extractor", self.category, self.subcategory)
         self._parentdir = ""
 
@@ -172,7 +176,6 @@ class Extractor():
             try:
                 response = session.request(method, url, **kwargs)
             except requests.exceptions.ConnectionError as exc:
-                code = 0
                 try:
                     reason = exc.args[0].reason
                     cls = reason.__class__.__name__
@@ -180,13 +183,15 @@ class Extractor():
                     msg = " {}: {}".format(cls, (err or pre).lstrip())
                 except Exception:
                     msg = exc
+                code = 0
             except (requests.exceptions.Timeout,
                     requests.exceptions.ChunkedEncodingError,
                     requests.exceptions.ContentDecodingError) as exc:
                 msg = exc
                 code = 0
             except (requests.exceptions.RequestException) as exc:
-                raise exception.HttpError(exc)
+                msg = exc
+                break
             else:
                 code = response.status_code
                 if self._write_pages:
@@ -238,12 +243,42 @@ class Extractor():
                 self.sleep(seconds, "retry")
             tries += 1
 
+        if not fatal or fatal is ...:
+            self.log.warning(msg)
+            return util.NullResponse(url, msg)
         raise exception.HttpError(msg, response)
 
     def request_location(self, url, **kwargs):
         kwargs.setdefault("method", "HEAD")
         kwargs.setdefault("allow_redirects", False)
         return self.request(url, **kwargs).headers.get("location", "")
+
+    def request_json(self, url, **kwargs):
+        try:
+            return util.json_loads(self.request(url, **kwargs).text)
+        except Exception as exc:
+            fatal = kwargs.get("fatal", True)
+            if not fatal or fatal is ...:
+                self.log.warning("%s: %s", exc.__class__.__name__, exc)
+                return {}
+            raise
+
+    def request_xml(self, url, xmlns=True, **kwargs):
+        text = self.request(url, **kwargs).text
+
+        if not xmlns:
+            text = text.replace(" xmlns=", " ns=")
+
+        parser = ElementTree.XMLParser()
+        try:
+            parser.feed(text)
+            return parser.close()
+        except Exception as exc:
+            fatal = kwargs.get("fatal", True)
+            if not fatal or fatal is ...:
+                self.log.warning("%s: %s", exc.__class__.__name__, exc)
+                return ElementTree.Element("")
+            raise
 
     _handle_429 = util.false
 
@@ -395,7 +430,10 @@ class Extractor():
             headers["User-Agent"] = useragent
             headers["Accept"] = "*/*"
             headers["Accept-Language"] = "en-US,en;q=0.5"
+
             ssl_ciphers = self.ciphers
+            if ssl_ciphers is not None and ssl_ciphers in SSL_CIPHERS:
+                ssl_ciphers = SSL_CIPHERS[ssl_ciphers]
 
         if BROTLI:
             headers["Accept-Encoding"] = "gzip, deflate, br"
@@ -413,12 +451,21 @@ class Extractor():
 
         custom_headers = self.config("headers")
         if custom_headers:
+            if isinstance(custom_headers, str):
+                if custom_headers in HTTP_HEADERS:
+                    custom_headers = HTTP_HEADERS[custom_headers]
+                else:
+                    self.log.error("Invalid 'headers' value '%s'",
+                                   custom_headers)
+                    custom_headers = ()
             headers.update(custom_headers)
 
         custom_ciphers = self.config("ciphers")
         if custom_ciphers:
             if isinstance(custom_ciphers, list):
                 ssl_ciphers = ":".join(custom_ciphers)
+            elif custom_ciphers in SSL_CIPHERS:
+                ssl_ciphers = SSL_CIPHERS[custom_ciphers]
             else:
                 ssl_ciphers = custom_ciphers
 
@@ -590,11 +637,6 @@ class Extractor():
         return util.json_loads(text.extr(
             page, ' id="__NEXT_DATA__" type="application/json">', "</script>"))
 
-    def _prepare_ddosguard_cookies(self):
-        if not self.cookies.get("__ddg2", domain=self.cookies_domain):
-            self.cookies.set(
-                "__ddg2", util.generate_token(), domain=self.cookies_domain)
-
     def _cache(self, func, maxage, keyarg=None):
         #  return cache.DatabaseCacheDecorator(func, maxage, keyarg)
         return cache.DatabaseCacheDecorator(func, keyarg, maxage)
@@ -616,35 +658,12 @@ class Extractor():
         fmt = self.config("date-format", "%Y-%m-%dT%H:%M:%S")
         return get("date-min", dmin), get("date-max", dmax)
 
-    def _dispatch_extractors(self, extractor_data, default=()):
-        """ """
-        extractors = {
-            data[0].subcategory: data
-            for data in extractor_data
-        }
-
-        include = self.config("include", default) or ()
-        if include == "all":
-            include = extractors
-        elif isinstance(include, str):
-            include = include.replace(" ", "").split(",")
-
-        result = [(Message.Version, 1)]
-        for category in include:
-            try:
-                extr, url = extractors[category]
-            except KeyError:
-                self.log.warning("Invalid include '%s'", category)
-            else:
-                result.append((Message.Queue, url, {"_extractor": extr}))
-        return iter(result)
-
     @classmethod
     def _dump(cls, obj):
         util.dump_json(obj, ensure_ascii=False, indent=2)
 
     def _dump_response(self, response, history=True):
-        """Write the response content to a .dump file in the current directory.
+        """Write the response content to a .txt file in the current directory.
 
         The file name is derived from the response url,
         replacing special characters with "_"
@@ -657,7 +676,8 @@ class Extractor():
             Extractor._dump_index += 1
         else:
             Extractor._dump_index = 1
-            Extractor._dump_sanitize = re.compile(r"[\\\\|/<>:\"?*&=#]+").sub
+            Extractor._dump_sanitize = util.re_compile(
+                r"[\\\\|/<>:\"?*&=#]+").sub
 
         fname = "{:>02}_{}".format(
             Extractor._dump_index,
@@ -794,6 +814,41 @@ class MangaExtractor(Extractor):
 
     def chapters(self, page):
         """Return a list of all (chapter-url, metadata)-tuples"""
+
+
+class Dispatch():
+    subcategory = "user"
+    cookies_domain = None
+    finalize = Extractor.finalize
+    skip = Extractor.skip
+
+    def __iter__(self):
+        return self.items()
+
+    def initialize(self):
+        pass
+
+    def _dispatch_extractors(self, extractor_data, default=()):
+        extractors = {
+            data[0].subcategory: data
+            for data in extractor_data
+        }
+
+        include = self.config("include", default) or ()
+        if include == "all":
+            include = extractors
+        elif isinstance(include, str):
+            include = include.replace(" ", "").split(",")
+
+        result = [(Message.Version, 1)]
+        for category in include:
+            try:
+                extr, url = extractors[category]
+            except KeyError:
+                self.log.warning("Invalid include '%s'", category)
+            else:
+                result.append((Message.Queue, url, {"_extractor": extr}))
+        return iter(result)
 
 
 class AsynchronousMixin():
@@ -953,7 +1008,7 @@ def _browser_useragent():
 
 _adapter_cache = {}
 _browser_cookies = {}
-
+CATEGORY_MAP = ()
 
 HTTP_HEADERS = {
     "firefox": (
