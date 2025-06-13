@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2018-2020 Leonardo Taccari
-# Copyright 2018-2023 Mike Fährmann
+# Copyright 2018-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -9,12 +9,11 @@
 
 """Extractors for https://www.instagram.com/"""
 
-from .common import Extractor, Message
+from .common import Extractor, Message, Dispatch
 from .. import text, util, exception
 from ..cache import cache, memcache
 import itertools
 import binascii
-import re
 
 BASE_PATTERN = r"(?:https?://)?(?:www\.)?instagram\.com"
 USER_PATTERN = BASE_PATTERN + r"/(?!(?:p|tv|reel|explore|stories)/)([^/?#]+)"
@@ -39,7 +38,7 @@ class InstagramExtractor(Extractor):
     def _init(self):
         self.www_claim = "0"
         self.csrf_token = util.generate_token()
-        self._find_tags = re.compile(r"#\w+").findall
+        self._find_tags = util.re(r"#\w+").findall
         self._logged_in = True
         self._cursor = None
         self._user = None
@@ -358,8 +357,7 @@ class InstagramExtractor(Extractor):
 
         return data
 
-    @staticmethod
-    def _extract_tagged_users(src, dest):
+    def _extract_tagged_users(self, src, dest):
         dest["tagged_users"] = tagged_users = []
 
         edges = src.get("edge_media_to_tagged_user")
@@ -430,17 +428,10 @@ class InstagramExtractor(Extractor):
                 user[key] = 0
 
 
-class InstagramUserExtractor(InstagramExtractor):
+class InstagramUserExtractor(Dispatch, InstagramExtractor):
     """Extractor for an Instagram user profile"""
-    subcategory = "user"
     pattern = USER_PATTERN + r"/?(?:$|[?#])"
     example = "https://www.instagram.com/USER/"
-
-    def initialize(self):
-        pass
-
-    def finalize(self):
-        pass
 
     def items(self):
         base = "{}/{}/".format(self.root, self.item)
@@ -987,8 +978,7 @@ class InstagramGraphqlAPI():
         self.user_by_id = api.user_by_id
         self.user_id = api.user_id
 
-    @staticmethod
-    def _unsupported(_=None):
+    def _unsupported(self, _=None):
         raise exception.StopExtraction("Unsupported with GraphQL API")
 
     def highlights_tray(self, user_id):

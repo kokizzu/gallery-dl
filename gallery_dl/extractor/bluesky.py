@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2024 Mike Fährmann
+# Copyright 2024-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -8,7 +8,7 @@
 
 """Extractors for https://bsky.app/"""
 
-from .common import Extractor, Message
+from .common import Extractor, Message, Dispatch
 from .. import text, util, exception
 from ..cache import cache, memcache
 
@@ -210,13 +210,9 @@ class BlueskyExtractor(Extractor):
         },)
 
 
-class BlueskyUserExtractor(BlueskyExtractor):
-    subcategory = "user"
+class BlueskyUserExtractor(Dispatch, BlueskyExtractor):
     pattern = USER_PATTERN + r"$"
     example = "https://bsky.app/profile/HANDLE"
-
-    def initialize(self):
-        pass
 
     def items(self):
         base = "{}/profile/{}/".format(self.root, self.groups[0])

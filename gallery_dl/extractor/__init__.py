@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2015-2023 Mike Fährmann
+# Copyright 2015-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -91,9 +91,8 @@ modules = [
     "jschan",
     "kabeuchi",
     "keenspot",
-    "kemonoparty",
+    "kemono",
     "khinsider",
-    "koharu",
     "komikcast",
     "lensdump",
     "lexica",
@@ -108,7 +107,6 @@ modules = [
     "manganelo",
     "mangapark",
     "mangaread",
-    "mangasee",
     "mangoxo",
     "misskey",
     "motherless",
@@ -142,6 +140,7 @@ modules = [
     "pornhub",
     "pornpics",
     "postmill",
+    "rawkuma",
     "reactor",
     "readcomiconline",
     "realbooru",
@@ -153,6 +152,7 @@ modules = [
     "saint",
     "sankaku",
     "sankakucomplex",
+    "schalenetwork",
     "scrolller",
     "seiga",
     "senmanga",
