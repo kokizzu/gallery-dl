@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2019-2024 Mike Fährmann
+# Copyright 2019-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -22,7 +22,7 @@ class HentainexusGalleryExtractor(GalleryExtractor):
     example = "https://hentainexus.com/view/12345"
 
     def __init__(self, match):
-        self.gallery_id = match.group(1)
+        self.gallery_id = match[1]
         url = "{}/view/{}".format(self.root, self.gallery_id)
         GalleryExtractor.__init__(self, match, url)
 
@@ -78,8 +78,7 @@ class HentainexusGalleryExtractor(GalleryExtractor):
                 pass
         return results
 
-    @staticmethod
-    def _decode(data):
+    def _decode(self, data):
         # https://hentainexus.com/static/js/reader.min.js?r=22
         hostname = "hentainexus.com"
         primes = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53)
@@ -118,8 +117,7 @@ class HentainexusGalleryExtractor(GalleryExtractor):
 
         return result
 
-    @staticmethod
-    def _join_title(data):
+    def _join_title(self, data):
         event = data['event']
         artist = data['artist']
         circle = data['circle']

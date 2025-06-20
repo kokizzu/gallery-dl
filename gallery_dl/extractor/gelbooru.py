@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014-2023 Mike Fährmann
+# Copyright 2014-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -292,7 +292,7 @@ class GelbooruRedirectExtractor(GelbooruBase, Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.url_base64 = match.group(1)
+        self.url_base64 = match[1]
 
     def items(self):
         url = text.ensure_http_scheme(binascii.a2b_base64(

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2017-2023 Mike Fährmann
+# Copyright 2017-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -70,7 +70,7 @@ class XvideosGalleryExtractor(XvideosBase, GalleryExtractor):
             return
 
         while len(results) % 500 == 0:
-            path = text.rextract(page, ' href="', '"', page.find(">Next</"))[0]
+            path = text.rextr(page, ' href="', '"', page.find(">Next</"))
             if not path:
                 break
             page = self.request(self.root + path).text
@@ -92,7 +92,7 @@ class XvideosUserExtractor(XvideosBase, Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.user = match.group(1)
+        self.user = match[1]
 
     def items(self):
         url = "{}/profiles/{}".format(self.root, self.user)

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2020 Leonardo Taccari
-# Copyright 2021-2023 Mike Fährmann
+# Copyright 2021-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -44,7 +44,7 @@ class WebtoonsEpisodeExtractor(WebtoonsBase, GalleryExtractor):
     """Extractor for an episode on webtoons.com"""
     subcategory = "episode"
     directory_fmt = ("{category}", "{comic}")
-    filename_fmt = "{episode_no}-{num:>02}.{extension}"
+    filename_fmt = "{episode_no}-{num:>02}{type:?-//}.{extension}"
     archive_fmt = "{title_no}_{episode_no}_{num}"
     pattern = (LANG_PATTERN + r"/([^/?#]+)/([^/?#]+)/[^/?#]+)"
                r"/viewer\?([^#'\"]+)")
@@ -59,6 +59,7 @@ class WebtoonsEpisodeExtractor(WebtoonsBase, GalleryExtractor):
         self.title_no = params.get("title_no")
         self.episode_no = params.get("episode_no")
         self.gallery_url = "{}/{}/viewer?{}".format(self.root, path, query)
+        self.thumbnails = self.config("thumbnails", False)
 
     def metadata(self, page):
         extr = text.extract_from(page)
@@ -128,6 +129,13 @@ class WebtoonsEpisodeExtractor(WebtoonsBase, GalleryExtractor):
             results.append((url, None))
         return results
 
+    def assets(self, page):
+        if self.thumbnails:
+            active = text.extr(page, 'class="on ', '</a>')
+            url = text.extr(active, 'data-url="', '"')
+            url = url.replace("://webtoon-phinf.", "://swebtoon-phinf.")
+            return ({"url": url, "type": "thumbnail"},)
+
 
 class WebtoonsComicExtractor(WebtoonsBase, Extractor):
     """Extractor for an entire comic on webtoons.com"""
@@ -177,7 +185,7 @@ class WebtoonsComicExtractor(WebtoonsBase, Extractor):
         """Extract and return all episode urls in 'page'"""
         page = text.extr(page, 'id="_listUl"', '</ul>')
         return [
-            match.group(0)
+            match[0]
             for match in WebtoonsEpisodeExtractor.pattern.finditer(page)
         ]
 

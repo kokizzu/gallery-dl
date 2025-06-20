@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2019-2023 Mike Fährmann
+# Copyright 2019-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -22,7 +22,7 @@ class MastodonExtractor(BaseExtractor):
 
     def __init__(self, match):
         BaseExtractor.__init__(self, match)
-        self.item = match.group(match.lastindex)
+        self.item = self.groups[-1]
 
     def _init(self):
         self.instance = self.root.partition("://")[2]

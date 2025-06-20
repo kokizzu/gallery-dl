@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2020-2023 Mike Fährmann
+# Copyright 2020-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -9,9 +9,8 @@
 """Extractors for https://hiperdex.com/"""
 
 from .common import ChapterExtractor, MangaExtractor
-from .. import text
+from .. import text, util
 from ..cache import memcache
-import re
 
 BASE_PATTERN = (r"((?:https?://)?(?:www\.)?"
                 r"(?:1st)?hiper(?:dex|toon)\d?\.(?:com|net|info|top))")
@@ -80,10 +79,10 @@ class HiperdexChapterExtractor(HiperdexBase, ChapterExtractor):
         return self.chapter_data(self.chapter)
 
     def images(self, page):
+        pattern = util.re(r'id="image-\d+"\s+(?:data-)?src="([^"]+)')
         return [
             (url.strip(), None)
-            for url in re.findall(
-                r'id="image-\d+"\s+(?:data-)?src="([^"]+)', page)
+            for url in pattern.findall(page)
         ]
 
 
@@ -130,8 +129,8 @@ class HiperdexArtistExtractor(HiperdexBase, MangaExtractor):
     example = "https://hiperdex.com/manga-artist/NAME/"
 
     def __init__(self, match):
-        self.root = text.ensure_http_scheme(match.group(1))
-        MangaExtractor.__init__(self, match, self.root + match.group(2) + "/")
+        self.root = text.ensure_http_scheme(match[1])
+        MangaExtractor.__init__(self, match, self.root + match[2] + "/")
 
     def chapters(self, page):
         results = []

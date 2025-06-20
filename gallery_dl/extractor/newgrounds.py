@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2018-2023 Mike Fährmann
+# Copyright 2018-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -8,11 +8,10 @@
 
 """Extractors for https://www.newgrounds.com/"""
 
-from .common import Extractor, Message
+from .common import Extractor, Message, Dispatch
 from .. import text, util, exception
 from ..cache import cache
 import itertools
-import re
 
 BASE_PATTERN = r"(?:https?://)?(?:www\.)?newgrounds\.com"
 USER_PATTERN = r"(?:https?://)?([\w-]+)\.newgrounds\.com"
@@ -31,11 +30,11 @@ class NewgroundsExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.user = match.group(1)
+        self.user = match[1]
         self.user_root = "https://{}.newgrounds.com".format(self.user)
 
     def _init(self):
-        self._extract_comment_urls = re.compile(
+        self._extract_comment_urls = util.re(
             r'(?:<img |data-smartload-)src="([^"]+)').findall
         self.flash = self.config("flash", True)
 
@@ -198,7 +197,10 @@ class NewgroundsExtractor(Extractor):
         data["favorites"] = text.parse_int(extr(
             'id="faves_load">', '<').replace(",", ""))
         data["score"] = text.parse_float(extr('id="score_number">', '<'))
-        data["tags"] = text.split_html(extr('<dd class="tags">', '</dd>'))
+        data["tags"] = [
+            t for t in text.split_html(extr('<dd class="tags">', '</dd>'))
+            if "(function(" not in t
+        ]
         data["artist"] = [
             text.extr(user, '//', '.')
             for user in text.extract_iter(page, '<div class="item-user">', '>')
@@ -258,8 +260,7 @@ class NewgroundsExtractor(Extractor):
             else:
                 yield {"image": url}
 
-    @staticmethod
-    def _extract_audio_data(extr, url):
+    def _extract_audio_data(self, extr, url):
         index = url.split("/")[5]
         return {
             "title"      : text.unescape(extr('"og:title" content="', '"')),
@@ -319,7 +320,7 @@ class NewgroundsExtractor(Extractor):
 
     def _video_formats(self, sources):
         src = sources["360p"][0]["src"]
-        sub = re.compile(r"\.360p\.\w+").sub
+        sub = util.re(r"\.360p\.\w+").sub
 
         for fmt in self.format:
             try:
@@ -396,12 +397,12 @@ class NewgroundsImageExtractor(NewgroundsExtractor):
 
     def __init__(self, match):
         NewgroundsExtractor.__init__(self, match)
-        if match.group(2):
-            self.user = match.group(2)
+        if match[2]:
+            self.user = match[2]
             self.post_url = "https://www.newgrounds.com/art/view/{}/{}".format(
-                self.user, match.group(3))
+                self.user, match[3])
         else:
-            self.post_url = text.ensure_http_scheme(match.group(0))
+            self.post_url = text.ensure_http_scheme(match[0])
 
     def posts(self):
         return (self.post_url,)
@@ -416,7 +417,7 @@ class NewgroundsMediaExtractor(NewgroundsExtractor):
     def __init__(self, match):
         NewgroundsExtractor.__init__(self, match)
         self.user = ""
-        self.post_url = self.root + match.group(1)
+        self.post_url = self.root + match[1]
 
     def posts(self):
         return (self.post_url,)
@@ -450,14 +451,10 @@ class NewgroundsGamesExtractor(NewgroundsExtractor):
     example = "https://USER.newgrounds.com/games"
 
 
-class NewgroundsUserExtractor(NewgroundsExtractor):
+class NewgroundsUserExtractor(Dispatch, NewgroundsExtractor):
     """Extractor for a newgrounds user profile"""
-    subcategory = "user"
     pattern = USER_PATTERN + r"/?$"
     example = "https://USER.newgrounds.com"
-
-    def initialize(self):
-        pass
 
     def items(self):
         base = self.user_root + "/"
@@ -531,8 +528,7 @@ class NewgroundsFollowingExtractor(NewgroundsFavoriteExtractor):
         for url in self._pagination_favorites(kind, pnum):
             yield Message.Queue, url, data
 
-    @staticmethod
-    def _extract_favorites(page):
+    def _extract_favorites(self, page):
         return [
             text.ensure_http_scheme(user.rpartition('"')[2])
             for user in text.extract_iter(page, 'class="item-user', '"><img')

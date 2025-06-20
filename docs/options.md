@@ -51,6 +51,8 @@
     -N, --print [EVENT:]FORMAT  Write FORMAT during EVENT (default 'prepare')
                                 to standard output. Examples: 'id' or
                                 'post:{md5[:8]}'
+    --Print [EVENT:]FORMAT      Like --print, but also sets --no-download,
+                                --no-skip, and disables other output to stdout
     --print-to-file [EVENT:]FORMAT FILE
                                 Append FORMAT during EVENT to FILE
     --list-modules              Print a list of available extractor modules
@@ -77,7 +79,8 @@
     --no-check-certificate      Disable HTTPS certificate validation
 
 ## Downloader Options:
-    -r, --limit-rate RATE       Maximum download rate (e.g. 500k or 2.5M)
+    -r, --limit-rate RATE       Maximum download rate (e.g. 500k, 2.5M, or
+                                800k-2M)
     --chunk-size SIZE           Size of in-memory data chunks (default: 32k)
     --sleep SECONDS             Number of seconds to wait before each download.
                                 This can be either a constant value or a range

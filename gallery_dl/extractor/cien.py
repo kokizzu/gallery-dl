@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2024 Mike Fährmann
+# Copyright 2024-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -20,7 +20,7 @@ class CienExtractor(Extractor):
     request_interval = (1.0, 2.0)
 
     def __init__(self, match):
-        self.root = text.root_from_url(match.group(0))
+        self.root = text.root_from_url(match[0])
         Extractor.__init__(self, match)
 
     def _init(self):

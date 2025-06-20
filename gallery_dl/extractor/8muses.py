@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2019-2023 Mike Fährmann
+# Copyright 2019-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -26,8 +26,8 @@ class _8musesAlbumExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.path = match.group(1)
-        self.params = match.group(2) or ""
+        self.path = match[1]
+        self.params = match[2] or ""
 
     def items(self):
         url = self.root + self.path + self.params
@@ -92,8 +92,7 @@ class _8musesAlbumExtractor(Extractor):
                 album["updatedAt"], "%Y-%m-%dT%H:%M:%S.%fZ"),
         }
 
-    @staticmethod
-    def _unobfuscate(data):
+    def _unobfuscate(self, data):
         return util.json_loads("".join([
             chr(33 + (ord(c) + 14) % 94) if "!" <= c <= "~" else c
             for c in text.unescape(data.strip("\t\n\r !"))

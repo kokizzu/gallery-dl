@@ -58,15 +58,14 @@ class _4archiveThreadExtractor(Extractor):
             for post in page.split('class="postContainer')[1:]
         ]
 
-    @staticmethod
-    def parse(post):
+    def parse(self, post):
         extr = text.extract_from(post)
         data = {
             "name": extr('class="name">', "</span>"),
             "date": text.parse_datetime(
                 extr('class="dateTime postNum" >', "<").strip(),
                 "%Y-%m-%d %H:%M:%S"),
-            "no"  : text.parse_int(extr('href="#p', '"')),
+            "no"  : text.parse_int(extr(">Post No.", "<")),
         }
         if 'class="file"' in post:
             extr('class="fileText"', ">File: <a")
@@ -94,8 +93,8 @@ class _4archiveBoardExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.board = match.group(1)
-        self.num = text.parse_int(match.group(2), 1)
+        self.board = match[1]
+        self.num = text.parse_int(match[2], 1)
 
     def items(self):
         data = {"_extractor": _4archiveThreadExtractor}

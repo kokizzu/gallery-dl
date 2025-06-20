@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2021-2023 Mike Fährmann
+# Copyright 2021-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -26,7 +26,7 @@ class UnsplashExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.item = match.group(1)
+        self.item = match[1]
 
     def items(self):
         fmt = self.config("format") or "raw"
@@ -48,8 +48,7 @@ class UnsplashExtractor(Extractor):
             yield Message.Directory, photo
             yield Message.Url, url, photo
 
-    @staticmethod
-    def metadata():
+    def metadata(self):
         return None
 
     def skip(self, num):
@@ -115,7 +114,7 @@ class UnsplashCollectionExtractor(UnsplashExtractor):
 
     def __init__(self, match):
         UnsplashExtractor.__init__(self, match)
-        self.title = match.group(2) or ""
+        self.title = match[2] or ""
 
     def metadata(self):
         return {"collection_id": self.item, "collection_title": self.title}
@@ -134,7 +133,7 @@ class UnsplashSearchExtractor(UnsplashExtractor):
 
     def __init__(self, match):
         UnsplashExtractor.__init__(self, match)
-        self.query = match.group(2)
+        self.query = match[2]
 
     def photos(self):
         url = self.root + "/napi/search/photos"

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2019-2023 Mike Fährmann
+# Copyright 2019-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -8,7 +8,7 @@
 
 """Extractors for https://www.pornhub.com/"""
 
-from .common import Extractor, Message
+from .common import Extractor, Message, Dispatch
 from .. import text, exception
 
 BASE_PATTERN = r"(?:https?://)?(?:[\w-]+\.)?pornhub\.com"
@@ -60,7 +60,7 @@ class PornhubGalleryExtractor(PornhubExtractor):
 
     def __init__(self, match):
         PornhubExtractor.__init__(self, match)
-        self.gallery_id = match.group(1)
+        self.gallery_id = match[1]
         self._first = None
 
     def items(self):
@@ -141,7 +141,7 @@ class PornhubGifExtractor(PornhubExtractor):
 
     def __init__(self, match):
         PornhubExtractor.__init__(self, match)
-        self.gallery_id = match.group(1)
+        self.gallery_id = match[1]
 
     def items(self):
         url = "{}/gif/{}".format(self.root, self.gallery_id)
@@ -164,21 +164,13 @@ class PornhubGifExtractor(PornhubExtractor):
         yield Message.Url, gif["url"], text.nameext_from_url(gif["url"], gif)
 
 
-class PornhubUserExtractor(PornhubExtractor):
+class PornhubUserExtractor(Dispatch, PornhubExtractor):
     """Extractor for a pornhub user"""
-    subcategory = "user"
     pattern = BASE_PATTERN + r"/((?:users|model|pornstar)/[^/?#]+)/?$"
     example = "https://www.pornhub.com/model/USER"
 
-    def __init__(self, match):
-        PornhubExtractor.__init__(self, match)
-        self.user = match.group(1)
-
-    def initialize(self):
-        pass
-
     def items(self):
-        base = "{}/{}/".format(self.root, self.user)
+        base = "{}/{}/".format(self.root, self.groups[0])
         return self._dispatch_extractors((
             (PornhubPhotosExtractor, base + "photos"),
             (PornhubGifsExtractor  , base + "gifs"),

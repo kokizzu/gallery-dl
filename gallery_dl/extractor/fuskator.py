@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2019-2023 Mike Fährmann
+# Copyright 2019-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -21,7 +21,7 @@ class FuskatorGalleryExtractor(GalleryExtractor):
     example = "https://fuskator.com/thumbs/ID/"
 
     def __init__(self, match):
-        self.gallery_hash = match.group(1)
+        self.gallery_hash = match[1]
         url = "{}/thumbs/{}/index.html".format(self.root, self.gallery_hash)
         GalleryExtractor.__init__(self, match, url)
 
@@ -72,7 +72,7 @@ class FuskatorSearchExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.path = match.group(1)
+        self.path = match[1]
 
     def items(self):
         url = self.root + self.path
@@ -87,4 +87,4 @@ class FuskatorSearchExtractor(Extractor):
             pages = text.extr(page, 'class="pages"><span>', '>&gt;&gt;<')
             if not pages:
                 return
-            url = self.root + text.rextract(pages, 'href="', '"')[0]
+            url = self.root + text.rextr(pages, 'href="', '"')

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2018-2023 Mike Fährmann
+# Copyright 2018-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -17,6 +17,7 @@ class BehanceExtractor(Extractor):
     category = "behance"
     root = "https://www.behance.net"
     request_interval = (2.0, 4.0)
+    tls12 = False
 
     def _init(self):
         self._bcp = self.cookies.get("bcp", domain="www.behance.net")
@@ -87,7 +88,7 @@ class BehanceGalleryExtractor(BehanceExtractor):
 
     def __init__(self, match):
         BehanceExtractor.__init__(self, match)
-        self.gallery_id = match.group(1)
+        self.gallery_id = match[1]
 
     def _init(self):
         BehanceExtractor._init(self)
@@ -228,7 +229,7 @@ class BehanceUserExtractor(BehanceExtractor):
 
     def __init__(self, match):
         BehanceExtractor.__init__(self, match)
-        self.user = match.group(1)
+        self.user = match[1]
 
     def galleries(self):
         endpoint = "GetProfileProjects"
@@ -256,7 +257,7 @@ class BehanceCollectionExtractor(BehanceExtractor):
 
     def __init__(self, match):
         BehanceExtractor.__init__(self, match)
-        self.collection_id = match.group(1)
+        self.collection_id = match[1]
 
     def galleries(self):
         endpoint = "GetMoodboardItemsAndRecommendations"

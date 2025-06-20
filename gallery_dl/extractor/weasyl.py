@@ -20,8 +20,7 @@ class WeasylExtractor(Extractor):
     root = "https://www.weasyl.com"
     useragent = util.USERAGENT
 
-    @staticmethod
-    def populate_submission(data):
+    def populate_submission(self, data):
         # Some submissions don't have content and can be skipped
         if "submission" in data["media"]:
             data["url"] = data["media"]["submission"][0]["url"]
@@ -77,7 +76,7 @@ class WeasylSubmissionExtractor(WeasylExtractor):
 
     def __init__(self, match):
         WeasylExtractor.__init__(self, match)
-        self.submitid = match.group(1)
+        self.submitid = match[1]
 
     def items(self):
         data = self.request_submission(self.submitid)
@@ -93,7 +92,7 @@ class WeasylSubmissionsExtractor(WeasylExtractor):
 
     def __init__(self, match):
         WeasylExtractor.__init__(self, match)
-        self.owner_login = match.group(1)
+        self.owner_login = match[1]
 
     def items(self):
         yield Message.Directory, {"owner_login": self.owner_login}
@@ -129,7 +128,7 @@ class WeasylJournalExtractor(WeasylExtractor):
 
     def __init__(self, match):
         WeasylExtractor.__init__(self, match)
-        self.journalid = match.group(1)
+        self.journalid = match[1]
 
     def items(self):
         data = self.retrieve_journal(self.journalid)
@@ -146,7 +145,7 @@ class WeasylJournalsExtractor(WeasylExtractor):
 
     def __init__(self, match):
         WeasylExtractor.__init__(self, match)
-        self.owner_login = match.group(1)
+        self.owner_login = match[1]
 
     def items(self):
         yield Message.Directory, {"owner_login": self.owner_login}
@@ -200,5 +199,5 @@ class WeasylFavoriteExtractor(WeasylExtractor):
                 pos = page.index('">Next (', pos)
             except ValueError:
                 return
-            path = text.unescape(text.rextract(page, 'href="', '"', pos)[0])
+            path = text.unescape(text.rextr(page, 'href="', '"', pos))
             params = None

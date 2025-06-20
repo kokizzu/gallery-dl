@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2019-2023 Mike Fährmann
+# Copyright 2019-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -98,8 +98,7 @@ class NozomiExtractor(Extractor):
     def metadata(self):
         return {}
 
-    @staticmethod
-    def _list(src):
+    def _list(self, src):
         return [x["tagname_display"] for x in src] if src else ()
 
 
@@ -111,7 +110,7 @@ class NozomiPostExtractor(NozomiExtractor):
 
     def __init__(self, match):
         NozomiExtractor.__init__(self, match)
-        self.post_id = match.group(1)
+        self.post_id = match[1]
 
     def posts(self):
         return (self.post_id,)
@@ -158,7 +157,7 @@ class NozomiSearchExtractor(NozomiExtractor):
 
     def __init__(self, match):
         NozomiExtractor.__init__(self, match)
-        self.tags = text.unquote(match.group(1)).split()
+        self.tags = text.unquote(match[1]).split()
 
     def metadata(self):
         return {"search_tags": self.tags}

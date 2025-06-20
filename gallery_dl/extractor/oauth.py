@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2017-2023 Mike Fährmann
+# Copyright 2017-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -354,7 +354,7 @@ class OAuthMastodon(OAuthBase):
 
     def __init__(self, match):
         OAuthBase.__init__(self, match)
-        self.instance = match.group(1)
+        self.instance = match[1]
 
     def items(self):
         yield Message.Version, 1

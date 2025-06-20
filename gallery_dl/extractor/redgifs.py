@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2020-2023 Mike Fährmann
+# Copyright 2020-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -23,7 +23,7 @@ class RedgifsExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.key = match.group(1)
+        self.key = match[1]
 
     def _init(self):
         self.api = RedgifsAPI(self)
@@ -94,7 +94,7 @@ class RedgifsUserExtractor(RedgifsExtractor):
 
     def __init__(self, match):
         RedgifsExtractor.__init__(self, match)
-        self.query = match.group(2)
+        self.query = match[2]
 
     def metadata(self):
         return {"userName": self.key}
@@ -116,7 +116,7 @@ class RedgifsCollectionExtractor(RedgifsExtractor):
 
     def __init__(self, match):
         RedgifsExtractor.__init__(self, match)
-        self.collection_id = match.group(2)
+        self.collection_id = match[2]
 
     def metadata(self):
         collection = self.api.collection_info(self.key, self.collection_id)
@@ -151,7 +151,7 @@ class RedgifsNichesExtractor(RedgifsExtractor):
 
     def __init__(self, match):
         RedgifsExtractor.__init__(self, match)
-        self.query = match.group(2)
+        self.query = match[2]
 
     def gifs(self):
         order = text.parse_query(self.query).get("order")

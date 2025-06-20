@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2015-2023 Mike Fährmann
+# Copyright 2015-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -21,7 +21,7 @@ class ImgurExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.key = match.group(1)
+        self.key = match[1]
 
     def _init(self):
         self.api = ImgurAPI(self)
@@ -168,7 +168,7 @@ class ImgurFavoriteFolderExtractor(ImgurExtractor):
 
     def __init__(self, match):
         ImgurExtractor.__init__(self, match)
-        self.folder_id = match.group(2)
+        self.folder_id = match[2]
 
     def items(self):
         return self._items_queue(self.api.account_favorites_folder(

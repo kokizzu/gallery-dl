@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2017-2023 Mike Fährmann
+# Copyright 2017-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -156,7 +156,11 @@ class UgoiraAction(argparse.Action):
 class PrintAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
         if self.const:
-            filename = self.const
+            if self.const == "+":
+                namespace.options.append(((), "skip", False))
+                namespace.options.append(((), "download", False))
+                namespace.options.append((("output",), "mode", False))
+            filename = "-"
             base = None
             mode = "w"
         else:
@@ -398,6 +402,13 @@ def build_parser():
               "output. Examples: 'id' or 'post:{md5[:8]}'"),
     )
     output.add_argument(
+        "--Print",
+        dest="postprocessors", metavar="[EVENT:]FORMAT",
+        action=PrintAction, const="+",
+        help=("Like --print, but also sets --no-download, --no-skip, "
+              "and disables other output to stdout"),
+    )
+    output.add_argument(
         "--print-to-file",
         dest="postprocessors", metavar="[EVENT:]FORMAT FILE",
         action=PrintAction, nargs=2,
@@ -485,7 +496,7 @@ def build_parser():
     downloader.add_argument(
         "-r", "--limit-rate",
         dest="rate", metavar="RATE", action=ConfigAction,
-        help="Maximum download rate (e.g. 500k or 2.5M)",
+        help="Maximum download rate (e.g. 500k, 2.5M, or 800k-2M)",
     )
     downloader.add_argument(
         "--chunk-size",

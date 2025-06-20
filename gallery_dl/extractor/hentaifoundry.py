@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2015-2023 Mike Fährmann
+# Copyright 2015-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -8,7 +8,7 @@
 
 """Extractors for https://www.hentai-foundry.com/"""
 
-from .common import Extractor, Message
+from .common import Extractor, Message, Dispatch
 from .. import text, util
 
 BASE_PATTERN = r"(https?://)?(?:www\.)?hentai-foundry\.com"
@@ -25,8 +25,8 @@ class HentaifoundryExtractor(Extractor):
     per_page = 25
 
     def __init__(self, match):
-        self.root = (match.group(1) or "https://") + "www.hentai-foundry.com"
-        self.user = match.group(2)
+        self.root = (match[1] or "https://") + "www.hentai-foundry.com"
+        self.user = match[2]
         Extractor.__init__(self, match)
         self.page_url = ""
         self.start_post = 0
@@ -192,14 +192,10 @@ class HentaifoundryExtractor(Extractor):
         self.request(url, method="POST", data=data)
 
 
-class HentaifoundryUserExtractor(HentaifoundryExtractor):
+class HentaifoundryUserExtractor(Dispatch, HentaifoundryExtractor):
     """Extractor for a hentaifoundry user profile"""
-    subcategory = "user"
     pattern = BASE_PATTERN + r"/user/([^/?#]+)/profile"
     example = "https://www.hentai-foundry.com/user/USER/profile"
-
-    def initialize(self):
-        pass
 
     def items(self):
         root = self.root
@@ -310,7 +306,7 @@ class HentaifoundryImageExtractor(HentaifoundryExtractor):
 
     def __init__(self, match):
         HentaifoundryExtractor.__init__(self, match)
-        self.index = match.group(3)
+        self.index = match[3]
 
     def items(self):
         post_url = "{}/pictures/user/{}/{}/?enterAgree=1".format(
@@ -351,7 +347,7 @@ class HentaifoundryStoryExtractor(HentaifoundryExtractor):
 
     def __init__(self, match):
         HentaifoundryExtractor.__init__(self, match)
-        self.index = match.group(3)
+        self.index = match[3]
 
     def items(self):
         story_url = "{}/stories/user/{}/{}/x?enterAgree=1".format(

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2022-2023 Mike Fährmann
+# Copyright 2022-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -26,7 +26,7 @@ from . import aes, text, util
 
 SUPPORTED_BROWSERS_CHROMIUM = {
     "brave", "chrome", "chromium", "edge", "opera", "thorium", "vivaldi"}
-SUPPORTED_BROWSERS_FIREFOX = {"firefox", "zen"}
+SUPPORTED_BROWSERS_FIREFOX = {"firefox", "librewolf", "zen"}
 SUPPORTED_BROWSERS = \
     SUPPORTED_BROWSERS_CHROMIUM | SUPPORTED_BROWSERS_FIREFOX | {"safari"}
 
@@ -212,8 +212,10 @@ def _firefox_cookies_database(browser_name, profile=None, container=None):
 
     path = _find_most_recently_used_file(search_root, "cookies.sqlite")
     if path is None:
-        raise FileNotFoundError("Unable to find Firefox cookies database in "
-                                "{}".format(search_root))
+        raise FileNotFoundError(
+            "Unable to find {} cookies database in {}".format(
+                browser_name.capitalize(), search_root))
+
     _log_debug("Extracting cookies from %s", path)
 
     if not container or container == "none":
@@ -257,20 +259,23 @@ def _firefox_browser_directory(browser_name):
     if sys.platform in ("win32", "cygwin"):
         appdata = os.path.expandvars("%APPDATA%")
         return {
-            "firefox": join(appdata, R"Mozilla\Firefox\Profiles"),
-            "zen"    : join(appdata, R"zen\Profiles")
+            "firefox"  : join(appdata, R"Mozilla\Firefox\Profiles"),
+            "librewolf": join(appdata, R"librewolf\Profiles"),
+            "zen"      : join(appdata, R"zen\Profiles"),
         }[browser_name]
     elif sys.platform == "darwin":
         appdata = os.path.expanduser("~/Library/Application Support")
         return {
-            "firefox": join(appdata, R"Firefox/Profiles"),
-            "zen"    : join(appdata, R"zen/Profiles")
+            "firefox"  : join(appdata, R"Firefox/Profiles"),
+            "librewolf": join(appdata, R"librewolf/Profiles"),
+            "zen"      : join(appdata, R"zen/Profiles"),
         }[browser_name]
     else:
         home = os.path.expanduser("~")
         return {
-            "firefox": join(home, R".mozilla/firefox"),
-            "zen"    : join(home, R".zen")
+            "firefox"  : join(home, R".mozilla/firefox"),
+            "librewolf": join(home, R".librewolf"),
+            "zen"      : join(home, R".zen"),
         }[browser_name]
 
 
@@ -519,8 +524,7 @@ class LinuxChromiumCookieDecryptor(ChromiumCookieDecryptor):
         self._cookie_counts = {"v10": 0, "v11": 0, "other": 0}
         self._offset = (32 if meta_version >= 24 else 0)
 
-    @staticmethod
-    def derive_key(password):
+    def derive_key(self, password):
         # values from
         # https://chromium.googlesource.com/chromium/src/+/refs/heads
         # /main/components/os_crypt/os_crypt_linux.cc
@@ -564,8 +568,7 @@ class MacChromiumCookieDecryptor(ChromiumCookieDecryptor):
         self._cookie_counts = {"v10": 0, "other": 0}
         self._offset = (32 if meta_version >= 24 else 0)
 
-    @staticmethod
-    def derive_key(password):
+    def derive_key(self, password):
         # values from
         # https://chromium.googlesource.com/chromium/src/+/refs/heads
         # /main/components/os_crypt/os_crypt_mac.mm

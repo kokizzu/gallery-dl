@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2019-2023 Mike Fährmann
+# Copyright 2019-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -47,7 +47,7 @@ class TsuminoGalleryExtractor(TsuminoBase, GalleryExtractor):
     example = "https://www.tsumino.com/entry/12345"
 
     def __init__(self, match):
-        self.gallery_id = match.group(1)
+        self.gallery_id = match[1]
         url = "{}/entry/{}".format(self.root, self.gallery_id)
         GalleryExtractor.__init__(self, match, url)
 
@@ -109,7 +109,7 @@ class TsuminoSearchExtractor(TsuminoBase, Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.query = match.group(1)
+        self.query = match[1]
 
     def items(self):
         for gallery in self.galleries():
@@ -158,8 +158,7 @@ class TsuminoSearchExtractor(TsuminoBase, Extractor):
             raise exception.StopExtraction(
                 "Invalid search query '%s' (%s)", query, exc)
 
-    @staticmethod
-    def _parse_simple(query):
+    def _parse_simple(self, query):
         """Parse search query with format '?<key>=value>'"""
         key, _, value = query.partition("=")
         tag_types = {
@@ -179,8 +178,7 @@ class TsuminoSearchExtractor(TsuminoBase, Extractor):
             "Tags[0][Exclude]": "false",
         }
 
-    @staticmethod
-    def _parse_jsurl(data):
+    def _parse_jsurl(self, data):
         """Parse search query in JSURL format
 
         Nested lists and dicts are handled in a special way to deal

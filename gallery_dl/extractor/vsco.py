@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2019-2023 Mike Fährmann
+# Copyright 2019-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -8,7 +8,7 @@
 
 """Extractors for https://vsco.co/"""
 
-from .common import Extractor, Message
+from .common import Extractor, Message, Dispatch
 from .. import text, util
 
 BASE_PATTERN = r"(?:https?://)?(?:www\.)?vsco\.co"
@@ -25,7 +25,7 @@ class VscoExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.user = match.group(1).lower()
+        self.user = match[1].lower()
 
     def items(self):
         videos = self.config("videos", True)
@@ -109,8 +109,7 @@ class VscoExtractor(Extractor):
                 yield from medias
                 params["page"] += 1
 
-    @staticmethod
-    def _transform_media(media):
+    def _transform_media(self, media):
         if "responsiveUrl" not in media:
             return None
         media["_id"] = media["id"]
@@ -122,8 +121,7 @@ class VscoExtractor(Extractor):
         media["image_meta"] = media.get("imageMeta")
         return media
 
-    @staticmethod
-    def _transform_video(media):
+    def _transform_video(self, media):
         media["is_video"] = True
         media["grid_name"] = ""
         media["video_url"] = media["playback_url"]
@@ -132,14 +130,10 @@ class VscoExtractor(Extractor):
         return media
 
 
-class VscoUserExtractor(VscoExtractor):
+class VscoUserExtractor(Dispatch, VscoExtractor):
     """Extractor for a vsco user profile"""
-    subcategory = "user"
     pattern = USER_PATTERN + r"/?$"
     example = "https://vsco.co/USER"
-
-    def initialize(self):
-        pass
 
     def items(self):
         base = "{}/{}/".format(self.root, self.user)

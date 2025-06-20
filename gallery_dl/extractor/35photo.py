@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2019-2023 Mike Fährmann
+# Copyright 2019-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -83,8 +83,7 @@ class _35photoExtractor(Extractor):
             info["num"] = 1
             yield info
 
-    @staticmethod
-    def _photo_ids(page):
+    def _photo_ids(self, page):
         """Extract unique photo IDs and return them as sorted list"""
         #  searching for photo-id="..." doesn't always work (see unit tests)
         if not page:
@@ -105,7 +104,7 @@ class _35photoUserExtractor(_35photoExtractor):
 
     def __init__(self, match):
         _35photoExtractor.__init__(self, match)
-        self.user = match.group(1)
+        self.user = match[1]
         self.user_id = 0
 
     def metadata(self):
@@ -134,7 +133,7 @@ class _35photoTagExtractor(_35photoExtractor):
 
     def __init__(self, match):
         _35photoExtractor.__init__(self, match)
-        self.tag = match.group(1)
+        self.tag = match[1]
 
     def metadata(self):
         return {"search_tag": text.unquote(self.tag).lower()}
@@ -199,7 +198,7 @@ class _35photoImageExtractor(_35photoExtractor):
 
     def __init__(self, match):
         _35photoExtractor.__init__(self, match)
-        self.photo_id = match.group(1)
+        self.photo_id = match[1]
 
     def photos(self):
         return (self.photo_id,)
