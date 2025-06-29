@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2022 Ailothaen
-# Copyright 2024 Mike Fährmann
+# Copyright 2024-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -27,8 +27,9 @@ class WikimediaExtractor(BaseExtractor):
         if self.category == "wikimedia":
             self.category = self.root.split(".")[-2]
         elif self.category in ("fandom", "wikigg"):
-            self.category = "{}-{}".format(
-                self.category, self.root.partition(".")[0].rpartition("/")[2])
+            self.category = (
+                f"{self.category}-"
+                f"{self.root.partition('.')[0].rpartition('/')[2]}")
 
         self.per_page = self.config("limit", 50)
 
@@ -52,8 +53,7 @@ class WikimediaExtractor(BaseExtractor):
                 return url
         raise exception.StopExtraction("Unable to find API endpoint")
 
-    @staticmethod
-    def prepare(image):
+    def prepare(self, image):
         """Adjust the content of an image object"""
         image["metadata"] = {
             m["name"]: m["value"]
@@ -107,7 +107,7 @@ class WikimediaExtractor(BaseExtractor):
         )
 
         while True:
-            data = self.request(url, params=params).json()
+            data = self.request_json(url, params=params)
 
             # ref: https://www.mediawiki.org/wiki/API:Errors_and_warnings
             error = data.get("error")

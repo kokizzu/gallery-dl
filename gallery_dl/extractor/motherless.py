@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2024 Mike Fährmann
+# Copyright 2024-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -113,7 +113,7 @@ class MotherlessGalleryExtractor(MotherlessExtractor):
             yield Message.Queue, self.root + "/GV" + gid, data
             return
 
-        url = "{}/G{}{}".format(self.root, type, gid)
+        url = f"{self.root}/G{type}{gid}"
         page = self.request(url).text
         data = self._extract_gallery_data(page)
 

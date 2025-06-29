@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2015-2023 Mike Fährmann
+# Copyright 2015-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -13,7 +13,6 @@ from .nozomi import decode_nozomi
 from ..cache import memcache
 from .. import text, util
 import string
-import re
 
 
 class HitomiExtractor(Extractor):
@@ -33,12 +32,10 @@ class HitomiGalleryExtractor(HitomiExtractor, GalleryExtractor):
     def __init__(self, match):
         GalleryExtractor.__init__(self, match, False)
         self.gid = gid = self.groups[0]
-        self.gallery_url = "https://ltn.{}/galleries/{}.js".format(
-            self.domain, gid)
+        self.page_url = f"https://ltn.{self.domain}/galleries/{gid}.js"
 
     def _init(self):
-        self.session.headers["Referer"] = "{}/reader/{}.html".format(
-            self.root, self.gid)
+        self.session.headers["Referer"] = f"{self.root}/reader/{self.gid}.html"
 
     def metadata(self, page):
         self.info = info = util.json_loads(page.partition("=")[2])
@@ -94,10 +91,8 @@ class HitomiGalleryExtractor(HitomiExtractor, GalleryExtractor):
 
             # https://ltn.gold-usergeneratedcontent.net/common.js
             inum = int(ihash[-1] + ihash[-3:-1], 16)
-            url = "https://{}{}.{}/{}/{}/{}.{}".format(
-                ext[0], gg_m.get(inum, gg_default) + 1, self.domain,
-                gg_b, inum, ihash, ext,
-            )
+            url = (f"https://{ext[0]}{gg_m.get(inum, gg_default) + 1}."
+                   f"{self.domain}/{gg_b}/{inum}/{ihash}.{ext}")
             result.append((url, idata))
         return result
 
@@ -123,8 +118,7 @@ class HitomiTagExtractor(HitomiExtractor):
             "_extractor": HitomiGalleryExtractor,
             "search_tags": text.unquote(self.tag.rpartition("-")[0]),
         }
-        nozomi_url = "https://ltn.{}/{}/{}.nozomi".format(
-            self.domain, self.type, self.tag)
+        nozomi_url = f"https://ltn.{self.domain}/{self.type}/{self.tag}.nozomi"
         headers = {
             "Origin": self.root,
             "Cache-Control": "max-age=0",
@@ -133,14 +127,13 @@ class HitomiTagExtractor(HitomiExtractor):
         offset = 0
         total = None
         while True:
-            headers["Referer"] = "{}/{}/{}.html?page={}".format(
-                self.root, self.type, self.tag, offset // 100 + 1)
-            headers["Range"] = "bytes={}-{}".format(offset, offset+99)
+            headers["Referer"] = (f"{self.root}/{self.type}/{self.tag}.html"
+                                  f"?page={offset // 100 + 1}")
+            headers["Range"] = f"bytes={offset}-{offset + 99}"
             response = self.request(nozomi_url, headers=headers)
 
             for gallery_id in decode_nozomi(response.content):
-                gallery_url = "{}/galleries/{}.html".format(
-                    self.root, gallery_id)
+                gallery_url = f"{self.root}/galleries/{gallery_id}.html"
                 yield Message.Queue, gallery_url, data
 
             offset += 100
@@ -163,8 +156,8 @@ class HitomiIndexExtractor(HitomiTagExtractor):
 
     def items(self):
         data = {"_extractor": HitomiGalleryExtractor}
-        nozomi_url = "https://ltn.{}/{}-{}.nozomi".format(
-            self.domain, self.tag, self.language)
+        nozomi_url = (f"https://ltn.{self.domain}"
+                      f"/{self.tag}-{self.language}.nozomi")
         headers = {
             "Origin": self.root,
             "Cache-Control": "max-age=0",
@@ -173,14 +166,13 @@ class HitomiIndexExtractor(HitomiTagExtractor):
         offset = 0
         total = None
         while True:
-            headers["Referer"] = "{}/{}-{}.html?page={}".format(
-                self.root, self.tag, self.language, offset // 100 + 1)
-            headers["Range"] = "bytes={}-{}".format(offset, offset+99)
+            headers["Referer"] = (f"{self.root}/{self.tag}-{self.language}"
+                                  f".html?page={offset // 100 + 1}")
+            headers["Range"] = f"bytes={offset}-{offset + 99}"
             response = self.request(nozomi_url, headers=headers)
 
             for gallery_id in decode_nozomi(response.content):
-                gallery_url = "{}/galleries/{}.html".format(
-                    self.root, gallery_id)
+                gallery_url = f"{self.root}/galleries/{gallery_id}.html"
                 yield Message.Queue, gallery_url, data
 
             offset += 100
@@ -199,7 +191,7 @@ class HitomiSearchExtractor(HitomiExtractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.query = match.group(1)
+        self.query = match[1]
         self.tags = text.unquote(self.query)
 
     def items(self):
@@ -211,24 +203,22 @@ class HitomiSearchExtractor(HitomiExtractor):
         intersects = set.intersection(*results)
 
         for gallery_id in sorted(intersects, reverse=True):
-            gallery_url = "{}/galleries/{}.html".format(
-                self.root, gallery_id)
+            gallery_url = f"{self.root}/galleries/{gallery_id}.html"
             yield Message.Queue, gallery_url, data
 
     def get_nozomi_items(self, full_tag):
         area, tag, language = self.get_nozomi_args(full_tag)
+        base = f"https://ltn.{self.domain}/n/"
 
         if area:
-            nozomi_url = "https://ltn.{}/n/{}/{}-{}.nozomi".format(
-                self.domain, area, tag, language)
+            nozomi_url = f"{base}{area}/{tag}-{language}.nozomi"
         else:
-            nozomi_url = "https://ltn.{}/n/{}-{}.nozomi".format(
-                self.domain, tag, language)
+            nozomi_url = f"{base}{tag}-{language}.nozomi"
 
         headers = {
             "Origin": self.root,
             "Cache-Control": "max-age=0",
-            "Referer": "{}/search.html?{}".format(self.root, self.query),
+            "Referer": f"{self.root}/search.html?{self.query}",
         }
 
         response = self.request(nozomi_url, headers=headers)
@@ -257,8 +247,8 @@ def _parse_gg(extr):
     m = {}
 
     keys = []
-    for match in re.finditer(
-            r"case\s+(\d+):(?:\s*o\s*=\s*(\d+))?", page):
+    for match in util.re_compile(
+            r"case\s+(\d+):(?:\s*o\s*=\s*(\d+))?").finditer(page):
         key, value = match.groups()
         keys.append(int(key))
 
@@ -268,11 +258,11 @@ def _parse_gg(extr):
                 m[key] = value
             keys.clear()
 
-    for match in re.finditer(
-            r"if\s+\(g\s*===?\s*(\d+)\)[\s{]*o\s*=\s*(\d+)", page):
-        m[int(match.group(1))] = int(match.group(2))
+    for match in util.re_compile(
+            r"if\s+\(g\s*===?\s*(\d+)\)[\s{]*o\s*=\s*(\d+)").finditer(page):
+        m[int(match[1])] = int(match[2])
 
-    d = re.search(r"(?:var\s|default:)\s*o\s*=\s*(\d+)", page)
-    b = re.search(r"b:\s*[\"'](.+)[\"']", page)
+    d = util.re_compile(r"(?:var\s|default:)\s*o\s*=\s*(\d+)").search(page)
+    b = util.re_compile(r"b:\s*[\"'](.+)[\"']").search(page)
 
-    return m, b.group(1).strip("/"), int(d.group(1)) if d else 0
+    return m, b[1].strip("/"), int(d[1]) if d else 0

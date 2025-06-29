@@ -37,22 +37,20 @@ class FacebookExtractor(Extractor):
         self.videos = self.config("videos", True)
         self.author_followups = self.config("author-followups", False)
 
-    @staticmethod
-    def decode_all(txt):
+    def decode_all(self, txt):
         return text.unescape(
             txt.encode().decode("unicode_escape")
             .encode("utf_16", "surrogatepass").decode("utf_16")
         ).replace("\\/", "/")
 
-    @staticmethod
-    def parse_set_page(set_page):
+    def parse_set_page(self, set_page):
         directory = {
             "set_id": text.extr(
                 set_page, '"mediaSetToken":"', '"'
             ) or text.extr(
                 set_page, '"mediasetToken":"', '"'
             ),
-            "username": FacebookExtractor.decode_all(
+            "username": self.decode_all(
                 text.extr(
                     set_page, '"user":{"__isProfile":"User","name":"', '","'
                 ) or text.extr(
@@ -62,7 +60,7 @@ class FacebookExtractor(Extractor):
             "user_id": text.extr(
                 set_page, '"owner":{"__typename":"User","id":"', '"'
             ),
-            "title": FacebookExtractor.decode_all(text.extr(
+            "title": self.decode_all(text.extr(
                 set_page, '"title":{"text":"', '"'
             )),
             "first_photo_id": text.extr(
@@ -77,8 +75,7 @@ class FacebookExtractor(Extractor):
 
         return directory
 
-    @staticmethod
-    def parse_photo_page(photo_page):
+    def parse_photo_page(self, photo_page):
         photo = {
             "id": text.extr(
                 photo_page, '"__isNode":"Photo","id":"', '"'
@@ -88,13 +85,13 @@ class FacebookExtractor(Extractor):
                 '"url":"https:\\/\\/www.facebook.com\\/photo\\/?fbid=',
                 '"'
             ).rsplit("&set=", 1)[-1],
-            "username": FacebookExtractor.decode_all(text.extr(
+            "username": self.decode_all(text.extr(
                 photo_page, '"owner":{"__typename":"User","name":"', '"'
             )),
             "user_id": text.extr(
                 photo_page, '"owner":{"__typename":"User","id":"', '"'
             ),
-            "caption": FacebookExtractor.decode_all(text.extr(
+            "caption": self.decode_all(text.extr(
                 photo_page,
                 '"message":{"delight_ranges"',
                 '"},"message_preferred_body"'
@@ -103,7 +100,7 @@ class FacebookExtractor(Extractor):
                 text.extr(photo_page, '\\"publish_time\\":', ',') or
                 text.extr(photo_page, '"created_time":', ',')
             ),
-            "url": FacebookExtractor.decode_all(text.extr(
+            "url": self.decode_all(text.extr(
                 photo_page, ',"image":{"uri":"', '","'
             )),
             "next_photo_id": text.extr(
@@ -133,8 +130,7 @@ class FacebookExtractor(Extractor):
 
         return photo
 
-    @staticmethod
-    def parse_post_page(post_page):
+    def parse_post_page(self, post_page):
         first_photo_url = text.extr(
             text.extr(
                 post_page, '"__isMedia":"Photo"', '"target_group"'
@@ -148,13 +144,12 @@ class FacebookExtractor(Extractor):
 
         return post
 
-    @staticmethod
-    def parse_video_page(video_page):
+    def parse_video_page(self, video_page):
         video = {
             "id": text.extr(
                 video_page, '\\"video_id\\":\\"', '\\"'
             ),
-            "username": FacebookExtractor.decode_all(text.extr(
+            "username": self.decode_all(text.extr(
                 video_page, '"actors":[{"__typename":"User","name":"', '","'
             )),
             "user_id": text.extr(
@@ -167,7 +162,7 @@ class FacebookExtractor(Extractor):
         }
 
         if not video["username"]:
-            video["username"] = FacebookExtractor.decode_all(text.extr(
+            video["username"] = self.decode_all(text.extr(
                 video_page,
                 '"__typename":"User","id":"' + video["user_id"] + '","name":"',
                 '","'
@@ -179,7 +174,7 @@ class FacebookExtractor(Extractor):
 
         audio = {
             **video,
-            "url": FacebookExtractor.decode_all(text.extr(
+            "url": self.decode_all(text.extr(
                 text.extr(
                     first_video_raw,
                     "AudioChannelConfiguration",
@@ -196,7 +191,7 @@ class FacebookExtractor(Extractor):
             first_video_raw, 'FBQualityLabel=\\"', '\\u003C\\/BaseURL>'
         ):
             resolution = raw_url.split('\\"', 1)[0]
-            video["urls"][resolution] = FacebookExtractor.decode_all(
+            video["urls"][resolution] = self.decode_all(
                 raw_url.split('BaseURL>', 1)[1]
             )
 
@@ -410,8 +405,7 @@ class FacebookProfileExtractor(FacebookExtractor):
     )
     example = "https://www.facebook.com/USERNAME"
 
-    @staticmethod
-    def get_profile_photos_set_id(profile_photos_page):
+    def get_profile_photos_set_id(self, profile_photos_page):
         set_ids_raw = text.extr(
             profile_photos_page, '"pageItems"', '"page_info"'
         )

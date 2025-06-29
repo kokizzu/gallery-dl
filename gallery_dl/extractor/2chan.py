@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2017-2023 Mike Fährmann
+# Copyright 2017-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -28,8 +28,8 @@ class _2chanThreadExtractor(Extractor):
         self.server, self.board, self.thread = match.groups()
 
     def items(self):
-        url = "https://{}.2chan.net/{}/res/{}.htm".format(
-            self.server, self.board, self.thread)
+        url = (f"https://{self.server}.2chan.net"
+               f"/{self.board}/res/{self.thread}.htm")
         page = self.request(url).text
         data = self.metadata(page)
         yield Message.Directory, data
@@ -74,8 +74,7 @@ class _2chanThreadExtractor(Extractor):
             data["ext"] = "." + data["extension"]
         return data
 
-    @staticmethod
-    def _extract_post(post):
+    def _extract_post(self, post):
         return text.extract_all(post, (
             ("post", 'class="csb">'   , '<'),
             ("name", 'class="cnm">'   , '<'),
@@ -85,8 +84,7 @@ class _2chanThreadExtractor(Extractor):
             ("com" , '>', '</blockquote>'),
         ))[0]
 
-    @staticmethod
-    def _extract_image(post, data):
+    def _extract_image(self, post, data):
         text.extract_all(post, (
             (None      , '_blank', ''),
             ("filename", '>', '<'),

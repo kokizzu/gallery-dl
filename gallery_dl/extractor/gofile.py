@@ -23,7 +23,7 @@ class GofileFolderExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.content_id = match.group(1)
+        self.content_id = match[1]
 
     def items(self):
         recursive = self.config("recursive")
@@ -86,10 +86,9 @@ class GofileFolderExtractor(Extractor):
         return self._api_request("contents/" + content_id, params, headers)
 
     def _api_request(self, endpoint, params=None, headers=None, method="GET"):
-        response = self.request(
+        response = self.request_json(
             "https://api.gofile.io/" + endpoint,
-            method=method, params=params, headers=headers,
-        ).json()
+            method=method, params=params, headers=headers)
 
         if response["status"] != "ok":
             if response["status"] == "error-notFound":

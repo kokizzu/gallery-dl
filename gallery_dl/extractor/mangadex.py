@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2018-2023 Mike Fährmann
+# Copyright 2018-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -44,7 +44,7 @@ class MangadexExtractor(Extractor):
     def _items_manga(self):
         data = {"_extractor": MangadexMangaExtractor}
         for manga in self.manga():
-            url = "{}/title/{}".format(self.root, manga["id"])
+            url = f"{self.root}/title/{manga['id']}"
             yield Message.Queue, url, data
 
     def _transform(self, chapter):
@@ -121,7 +121,7 @@ class MangadexChapterExtractor(MangadexExtractor):
 
         server = self.api.athome_server(self.uuid)
         chapter = server["chapter"]
-        base = "{}/data/{}/".format(server["baseUrl"], chapter["hash"])
+        base = f"{server['baseUrl']}/data/{chapter['hash']}/"
 
         enum = util.enumerate_reversed if self.config(
             "page-reverse") else enumerate
@@ -172,11 +172,11 @@ class MangadexListExtractor(MangadexExtractor):
                "/01234567-89ab-cdef-0123-456789abcdef/NAME")
 
     def __init__(self, match):
-        MangadexExtractor.__init__(self, match)
-        if match.group(2) == "feed":
+        if match[2] == "feed":
             self.subcategory = "list-feed"
         else:
             self.items = self._items_manga
+        MangadexExtractor.__init__(self, match)
 
     def chapters(self):
         return self.api.list_feed(self.uuid)
@@ -199,7 +199,7 @@ class MangadexAuthorExtractor(MangadexExtractor):
     def items(self):
         for manga in self.api.manga_author(self.uuid):
             manga["_extractor"] = MangadexMangaExtractor
-            url = "{}/title/{}".format(self.root, manga["id"])
+            url = f"{self.root}/title/{manga['id']}"
             yield Message.Queue, url, manga
 
 
@@ -301,8 +301,8 @@ class MangadexAPI():
         self.extractor.log.debug("Using client-id '%s…'", self.client_id[:24])
         url = ("https://auth.mangadex.org/realms/mangadex"
                "/protocol/openid-connect/token")
-        data = self.extractor.request(
-            url, method="POST", data=data, fatal=None).json()
+        data = self.extractor.request_json(
+            url, method="POST", data=data, fatal=None)
 
         try:
             access_token = data["access_token"]
@@ -328,8 +328,8 @@ class MangadexAPI():
             json = {"username": username, "password": password}
 
         self.extractor.log.debug("Using legacy login method")
-        data = self.extractor.request(
-            url, method="POST", json=json, fatal=None).json()
+        data = self.extractor.request_json(
+            url, method="POST", json=json, fatal=None)
         if data.get("result") != "ok":
             raise exception.AuthenticationError()
 

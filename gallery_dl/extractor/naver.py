@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2019-2023 Mike Fährmann
+# Copyright 2019-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -33,16 +33,16 @@ class NaverPostExtractor(NaverBase, GalleryExtractor):
     example = "https://blog.naver.com/BLOGID/12345"
 
     def __init__(self, match):
-        blog_id = match.group(1)
+        blog_id = match[1]
         if blog_id:
             self.blog_id = blog_id
-            self.post_id = match.group(2)
+            self.post_id = match[2]
         else:
-            self.blog_id = match.group(3)
-            self.post_id = match.group(4)
+            self.blog_id = match[3]
+            self.post_id = match[4]
 
-        url = "{}/PostView.nhn?blogId={}&logNo={}".format(
-            self.root, self.blog_id, self.post_id)
+        url = (f"{self.root}/PostView.nhn"
+               f"?blogId={self.blog_id}&logNo={self.post_id}")
         GalleryExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -117,7 +117,7 @@ class NaverPostExtractor(NaverBase, GalleryExtractor):
             "adt"  : "glad",
             "lc"   : "ko_KR",
         }
-        data = self.request(url, params=params).json()
+        data = self.request_json(url, params=params)
         video = max(data["videos"]["list"],
                     key=lambda v: v.get("size") or 0)
         files.append((video["source"], video))
@@ -134,17 +134,17 @@ class NaverBlogExtractor(NaverBase, Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.blog_id = match.group(1) or match.group(2)
+        self.blog_id = match[1] or match[2]
 
     def items(self):
         # fetch first post number
-        url = "{}/PostList.nhn?blogId={}".format(self.root, self.blog_id)
+        url = f"{self.root}/PostList.nhn?blogId={self.blog_id}"
         post_num = text.extr(
             self.request(url).text, 'gnFirstLogNo = "', '"',
         )
 
         # setup params for API calls
-        url = "{}/PostViewBottomTitleListAsync.nhn".format(self.root)
+        url = f"{self.root}/PostViewBottomTitleListAsync.nhn"
         params = {
             "blogId"             : self.blog_id,
             "logNo"              : post_num or "0",
@@ -160,11 +160,11 @@ class NaverBlogExtractor(NaverBase, Extractor):
 
         # loop over all posts
         while True:
-            data = self.request(url, params=params).json()
+            data = self.request_json(url, params=params)
 
             for post in data["postList"]:
-                post["url"] = "{}/PostView.nhn?blogId={}&logNo={}".format(
-                    self.root, self.blog_id, post["logNo"])
+                post["url"] = (f"{self.root}/PostView.nhn?blogId="
+                               f"{self.blog_id}&logNo={post['logNo']}")
                 post["_extractor"] = NaverPostExtractor
                 yield Message.Queue, post["url"], post
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2016-2023 Mike Fährmann
+# Copyright 2016-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -8,12 +8,11 @@
 
 """Extractors for https://x.com/"""
 
-from .common import Extractor, Message
+from .common import Extractor, Message, Dispatch
 from .. import text, util, exception
 from ..cache import cache, memcache
 import itertools
 import random
-import re
 
 BASE_PATTERN = (r"(?:https?://)?(?:www\.|mobile\.)?"
                 r"(?:(?:[fv]x)?twitter|(?:fix(?:up|v))?x)\.com")
@@ -32,7 +31,7 @@ class TwitterExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.user = match.group(1)
+        self.user = match[1]
 
     def _init(self):
         self.unavailable = self.config("unavailable", False)
@@ -72,21 +71,16 @@ class TwitterExtractor(Extractor):
         self.login()
         self.api = TwitterAPI(self)
         metadata = self.metadata()
-
-        if self.config("expand"):
-            tweets = self._expand_tweets(self.tweets())
-            self.tweets = lambda : tweets
-
-        if self.config("unique", True):
-            seen_tweets = set()
-        else:
-            seen_tweets = None
+        seen_tweets = set() if self.config("unique", True) else None
 
         if self.twitpic:
-            self._find_twitpic = re.compile(
+            self._find_twitpic = util.re(
                 r"https?(://twitpic\.com/(?!photos/)\w+)").findall
 
-        for tweet in self.tweets():
+        tweets = self.tweets()
+        if self.config("expand"):
+            tweets = self._expand_tweets(tweets)
+        for tweet in tweets:
 
             if "legacy" in tweet:
                 data = tweet["legacy"]
@@ -129,6 +123,11 @@ class TwitterExtractor(Extractor):
             tdata.update(metadata)
             tdata["count"] = len(files)
             yield Message.Directory, tdata
+
+            del tdata["source_id"]
+            if "source_user" in tdata:
+                del tdata["source_user"]
+
             for tdata["num"], file in enumerate(files, 1):
                 file.update(tdata)
                 url = file.pop("url")
@@ -180,38 +179,22 @@ class TwitterExtractor(Extractor):
                     if not self.unavailable:
                         continue
 
-            mtype = media.get("type")
-            descr = media.get("ext_alt_text")
-            width = media["original_info"].get("width", 0)
-            height = media["original_info"].get("height", 0)
-
             if "video_info" in media:
                 if self.videos == "ytdl":
-                    files.append({
-                        "url": "ytdl:{}/i/web/status/{}".format(
-                            self.root, tweet["id_str"]),
-                        "type"       : mtype,
-                        "width"      : width,
-                        "height"     : height,
-                        "extension"  : None,
-                        "description": descr,
-                    })
+                    url = f"ytdl:{self.root}/i/web/status/{tweet['id_str']}"
+                    file = {"url": url, "extension": "mp4"}
                 elif self.videos:
                     video_info = media["video_info"]
                     variant = max(
                         video_info["variants"],
                         key=lambda v: v.get("bitrate", 0),
                     )
-                    files.append({
-                        "url"        : variant["url"],
-                        "type"       : mtype,
-                        "width"      : width,
-                        "height"     : height,
-                        "bitrate"    : variant.get("bitrate", 0),
-                        "duration"   : video_info.get(
+                    file = {
+                        "url"     : variant["url"],
+                        "bitrate" : variant.get("bitrate", 0),
+                        "duration": video_info.get(
                             "duration_millis", 0) / 1000,
-                        "description": descr,
-                    })
+                    }
             elif "media_url_https" in media:
                 url = media["media_url_https"]
                 if url[-4] == ".":
@@ -219,16 +202,33 @@ class TwitterExtractor(Extractor):
                     base += "?format=" + fmt + "&name="
                 else:
                     base = url.rpartition("=")[0] + "="
-                files.append(text.nameext_from_url(url, {
-                    "url"        : base + self._size_image,
-                    "type"       : mtype,
-                    "width"      : width,
-                    "height"     : height,
-                    "_fallback"  : self._image_fallback(base),
-                    "description": descr,
-                }))
+                file = text.nameext_from_url(url, {
+                    "url"      : base + self._size_image,
+                    "_fallback": self._image_fallback(base),
+                })
             else:
                 files.append({"url": media["media_url"]})
+                continue
+
+            file["type"] = media.get("type")
+            file["width"] = media["original_info"].get("width", 0)
+            file["height"] = media["original_info"].get("height", 0)
+            file["description"] = media.get("ext_alt_text")
+            self._extract_media_source(file, media)
+            files.append(file)
+
+    def _extract_media_source(self, dest, media):
+        dest["source_id"] = 0
+
+        if "source_status_id_str" in media:
+            try:
+                dest["source_id"] = text.parse_int(
+                    media["source_status_id_str"])
+                dest["source_user"] = self._transform_user(
+                    media["additional_media_info"]["source_user"]
+                    ["user_results"]["result"])
+            except Exception:
+                pass
 
     def _image_fallback(self, base):
         for fmt in self._size_fallback:
@@ -288,7 +288,7 @@ class TwitterExtractor(Extractor):
 
         if self.cards == "ytdl":
             tweet_id = tweet.get("rest_id") or tweet["id_str"]
-            url = "ytdl:{}/i/web/status/{}".format(self.root, tweet_id)
+            url = f"ytdl:{self.root}/i/web/status/{tweet_id}"
             files.append({"url": url})
 
     def _extract_twitpic(self, tweet, files):
@@ -354,6 +354,7 @@ class TwitterExtractor(Extractor):
                 tget("in_reply_to_status_id_str")),
             "conversation_id": text.parse_int(
                 tget("conversation_id_str")),
+            "source_id"     : 0,
             "date"          : date,
             "author"        : author,
             "user"          : self._user or author,
@@ -417,9 +418,11 @@ class TwitterExtractor(Extractor):
             tdata["reply_to"] = legacy["in_reply_to_screen_name"]
         if "quoted_by" in legacy:
             tdata["quote_by"] = legacy["quoted_by"]
+        if "extended_entities" in legacy:
+            self._extract_media_source(
+                tdata, legacy["extended_entities"]["media"][0])
         if tdata["retweet_id"]:
-            tdata["content"] = "RT @{}: {}".format(
-                author["name"], tdata["content"])
+            tdata["content"] = f"RT @{author['name']}: {tdata['content']}"
             tdata["date_original"] = text.parse_timestamp(
                 ((tdata["retweet_id"] >> 22) + 1288834974657) // 1000)
 
@@ -577,27 +580,18 @@ class TwitterExtractor(Extractor):
             return self.cookies_update(_login_impl(self, username, password))
 
 
-class TwitterUserExtractor(TwitterExtractor):
+class TwitterUserExtractor(Dispatch, TwitterExtractor):
     """Extractor for a Twitter user"""
-    subcategory = "user"
     pattern = (BASE_PATTERN + r"/(?!search)(?:([^/?#]+)/?(?:$|[?#])"
                r"|i(?:/user/|ntent/user\?user_id=)(\d+))")
     example = "https://x.com/USER"
 
-    def __init__(self, match):
-        TwitterExtractor.__init__(self, match)
-        user_id = match.group(2)
-        if user_id:
-            self.user = "id:" + user_id
-
-    def initialize(self):
-        pass
-
-    def finalize(self):
-        pass
-
     def items(self):
-        base = "{}/{}/".format(self.root, self.user)
+        user, user_id = self.groups
+        if user_id is not None:
+            user = "id:" + user_id
+
+        base = f"{self.root}/{user}/"
         return self._dispatch_extractors((
             (TwitterInfoExtractor      , base + "info"),
             (TwitterAvatarExtractor    , base + "photo"),
@@ -663,12 +657,12 @@ class TwitterTimelineExtractor(TwitterExtractor):
             self.api._user_id_by_screen_name(self.user)
 
         # build search query
-        query = "from:{} max_id:{}".format(self._user["name"], tweet_id)
+        query = f"from:{self._user['name']} max_id:{tweet_id}"
         if self.retweets:
             query += " include:retweets include:nativeretweets"
 
         if state <= 2:
-            self._cursor_prefix = "2_{}/".format(tweet_id)
+            self._cursor_prefix = f"2_{tweet_id}/"
             if reset:
                 self._cursor = self._cursor_prefix
 
@@ -684,7 +678,7 @@ class TwitterTimelineExtractor(TwitterExtractor):
 
         if state <= 3:
             # yield unfiltered search results
-            self._cursor_prefix = "3_{}/".format(tweet_id)
+            self._cursor_prefix = f"3_{tweet_id}/"
             if reset:
                 self._cursor = self._cursor_prefix
 
@@ -847,7 +841,7 @@ class TwitterHashtagExtractor(TwitterExtractor):
     example = "https://x.com/hashtag/NAME"
 
     def items(self):
-        url = "{}/search?q=%23{}".format(self.root, self.user)
+        url = f"{self.root}/search?q=%23{self.user}"
         data = {"_extractor": TwitterSearchExtractor}
         yield Message.Queue, url, data
 
@@ -898,7 +892,7 @@ class TwitterTweetExtractor(TwitterExtractor):
 
     def __init__(self, match):
         TwitterExtractor.__init__(self, match)
-        self.tweet_id = match.group(2)
+        self.tweet_id = match[2]
 
     def tweets(self):
         conversations = self.config("conversations")
@@ -977,7 +971,7 @@ class TwitterQuotesExtractor(TwitterExtractor):
     example = "https://x.com/USER/status/12345/quotes"
 
     def items(self):
-        url = "{}/search?q=quoted_tweet_id:{}".format(self.root, self.user)
+        url = f"{self.root}/search?q=quoted_tweet_id:{self.user}"
         data = {"_extractor": TwitterSearchExtractor}
         yield Message.Queue, url, data
 
@@ -1055,8 +1049,7 @@ class TwitterImageExtractor(Extractor):
         TwitterExtractor._init_sizes(self)
 
     def items(self):
-        base = "https://pbs.twimg.com/media/{}?format={}&name=".format(
-            self.id, self.fmt)
+        base = f"https://pbs.twimg.com/media/{self.id}?format={self.fmt}&name="
 
         data = {
             "filename": self.id,
@@ -1391,7 +1384,7 @@ class TwitterAPI():
             ("viewer", "communities_timeline", "timeline"))
 
     def live_event_timeline(self, event_id):
-        endpoint = "/2/live_event/timeline/{}.json".format(event_id)
+        endpoint = f"/2/live_event/timeline/{event_id}.json"
         params = self.params.copy()
         params["timeline_id"] = "recap"
         params["urt"] = "true"
@@ -1399,7 +1392,7 @@ class TwitterAPI():
         return self._pagination_legacy(endpoint, params)
 
     def live_event(self, event_id):
-        endpoint = "/1.1/live_event/1/{}/timeline.json".format(event_id)
+        endpoint = f"/1.1/live_event/1/{event_id}/timeline.json"
         params = self.params.copy()
         params["count"] = "0"
         params["urt"] = "true"
@@ -1484,9 +1477,9 @@ class TwitterAPI():
             return user["rest_id"]
         except KeyError:
             if "unavailable_message" in user:
-                raise exception.NotFoundError("{} ({})".format(
-                    user["unavailable_message"].get("text"),
-                    user.get("reason")), False)
+                raise exception.NotFoundError(
+                    f"{user['unavailable_message'].get('text')} "
+                    f"({user.get('reason')})", False)
             else:
                 raise exception.NotFoundError("user")
 
@@ -1784,12 +1777,10 @@ class TwitterAPI():
                             extr.log.info("Retrying API request as guest")
                             continue
                         raise exception.AuthorizationError(
-                            "{} blocked your account".format(
-                                user["screen_name"]))
+                            f"{user['screen_name']} blocked your account")
                     elif user.get("protected"):
                         raise exception.AuthorizationError(
-                            "{}'s Tweets are protected".format(
-                                user["screen_name"]))
+                            f"{user['screen_name']}'s Tweets are protected")
 
                 raise exception.StopExtraction(
                     "Unable to retrieve Tweets from this timeline")
@@ -2019,7 +2010,7 @@ def _login_impl(extr, username, password):
         errors = []
         for error in data.get("errors") or ():
             msg = error.get("message")
-            errors.append('"{}"'.format(msg) if msg else "Unknown error")
+            errors.append(f'"{msg}"' if msg else "Unknown error")
         extr.log.debug(response.text)
         raise exception.AuthenticationError(", ".join(errors))
 
@@ -2163,7 +2154,7 @@ def _login_impl(extr, username, password):
             "subtask_inputs": [inputs],
         }
 
-        extr.sleep(random.uniform(1.0, 3.0), "login ({})".format(subtask))
+        extr.sleep(random.uniform(1.0, 3.0), f"login ({subtask})")
         flow_token, subtask = process(data)
 
     return {

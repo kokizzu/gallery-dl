@@ -52,7 +52,7 @@ class TiktokExtractor(Extractor):
 
             if "imagePost" in post:
                 if not original_title:
-                    title = "TikTok photo #{}".format(post["id"])
+                    title = f"TikTok photo #{post['id']}"
                 img_list = post["imagePost"]["images"]
                 for i, img in enumerate(img_list, 1):
                     url = img["imageURL"]["urlList"][0]
@@ -83,7 +83,7 @@ class TiktokExtractor(Extractor):
 
             if ytdl_media:
                 if not original_title:
-                    title = "TikTok {} #{}".format(ytdl_media, post["id"])
+                    title = f"TikTok {ytdl_media} #{post['id']}"
                 post.update({
                     "type"      : ytdl_media,
                     "image"     : None,
@@ -104,7 +104,12 @@ class TiktokExtractor(Extractor):
         tries = 0
         while True:
             try:
-                html = self.request(url).text
+                response = self.request(url)
+                if response.history and "/login" in response.url:
+                    raise exception.AuthorizationError(
+                        "HTTP redirect to login page "
+                        f"('{response.url.partition('?')[0]}')")
+                html = response.text
                 data = text.extr(
                     html, '<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" '
                     'type="application/json">', '</script>')
@@ -128,7 +133,7 @@ class TiktokExtractor(Extractor):
         post.update({
             "type"     : "audio",
             "image"    : None,
-            "title"    : post["desc"] or "TikTok audio #{}".format(post["id"]),
+            "title"    : post["desc"] or f"TikTok audio #{post['id']}",
             "duration" : audio.get("duration"),
             "num"      : 0,
             "img_id"   : "",
@@ -167,7 +172,7 @@ class TiktokPostExtractor(TiktokExtractor):
 
     def urls(self):
         user, post_id = self.groups
-        url = "{}/@{}/video/{}".format(self.root, user or "", post_id)
+        url = f"{self.root}/@{user or ''}/video/{post_id}"
         return (url,)
 
 
@@ -241,11 +246,17 @@ class TiktokUserExtractor(TiktokExtractor):
                 set_cookie(cookie)
 
         user_name = self.groups[0]
-        profile_url = "{}/@{}".format(self.root, user_name)
+        profile_url = f"{self.root}/@{user_name}"
         if self.avatar:
-            avatar_url, avatar = self._generate_avatar(user_name, profile_url)
-            yield Message.Directory, avatar
-            yield Message.Url, avatar_url, avatar
+            try:
+                avatar_url, avatar = self._generate_avatar(
+                    user_name, profile_url)
+            except Exception as exc:
+                self.log.warning("Unable to extract 'avatar' URL (%s: %s)",
+                                 exc.__class__.__name__, exc)
+            else:
+                yield Message.Directory, avatar
+                yield Message.Url, avatar_url, avatar
 
         with ytdl_instance as ydl:
             info_dict = ydl._YoutubeDL__extract_info(

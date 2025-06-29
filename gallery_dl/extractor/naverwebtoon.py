@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2021 Seonghyeon Cho
-# Copyright 2022-2033 Mike Fährmann
+# Copyright 2022-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -32,7 +32,7 @@ class NaverwebtoonEpisodeExtractor(NaverwebtoonBase, GalleryExtractor):
 
     def __init__(self, match):
         path, query = match.groups()
-        url = "{}/{}/detail?{}".format(self.root, path, query)
+        url = f"{self.root}/{path}/detail?{query}"
         GalleryExtractor.__init__(self, match, url)
 
         query = text.parse_query(query)
@@ -54,8 +54,7 @@ class NaverwebtoonEpisodeExtractor(NaverwebtoonBase, GalleryExtractor):
                 extr('"painters":[', ']'), '"name":"', '"')]
         }
 
-    @staticmethod
-    def images(page):
+    def images(self, page):
         view_area = text.extr(page, 'id="comic_view_area"', '</div>')
         return [
             (url, None)
@@ -90,11 +89,10 @@ class NaverwebtoonComicExtractor(NaverwebtoonBase, Extractor):
         }
 
         while True:
-            data = self.request(url, headers=headers, params=params).json()
+            data = self.request_json(url, headers=headers, params=params)
 
             path = data["webtoonLevelCode"].lower().replace("_c", "C", 1)
-            base = "{}/{}/detail?titleId={}&no=".format(
-                self.root, path, data["titleId"])
+            base = f"{self.root}/{path}/detail?titleId={data['titleId']}&no="
 
             for article in data["articleList"]:
                 article["_extractor"] = NaverwebtoonEpisodeExtractor

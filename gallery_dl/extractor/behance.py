@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2018-2023 Mike Fährmann
+# Copyright 2018-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -17,6 +17,7 @@ class BehanceExtractor(Extractor):
     category = "behance"
     root = "https://www.behance.net"
     request_interval = (2.0, 4.0)
+    tls12 = False
 
     def _init(self):
         self._bcp = self.cookies.get("bcp", domain="www.behance.net")
@@ -44,8 +45,8 @@ class BehanceExtractor(Extractor):
             "variables": variables,
         }
 
-        return self.request(url, method="POST", headers=headers,
-                            json=data).json()["data"]
+        return self.request_json(
+            url, method="POST", headers=headers, json=data)["data"]
 
     def _update(self, data):
         # compress data to simple lists
@@ -87,7 +88,7 @@ class BehanceGalleryExtractor(BehanceExtractor):
 
     def __init__(self, match):
         BehanceExtractor.__init__(self, match)
-        self.gallery_id = match.group(1)
+        self.gallery_id = match[1]
 
     def _init(self):
         BehanceExtractor._init(self)
@@ -114,7 +115,7 @@ class BehanceGalleryExtractor(BehanceExtractor):
 
     def get_gallery_data(self):
         """Collect gallery info dict"""
-        url = "{}/gallery/{}/a".format(self.root, self.gallery_id)
+        url = f"{self.root}/gallery/{self.gallery_id}/a"
         cookies = {
             "gki": '{"feature_project_view":false,'
                    '"feature_discover_login_prompt":false,'
@@ -228,7 +229,7 @@ class BehanceUserExtractor(BehanceExtractor):
 
     def __init__(self, match):
         BehanceExtractor.__init__(self, match)
-        self.user = match.group(1)
+        self.user = match[1]
 
     def galleries(self):
         endpoint = "GetProfileProjects"
@@ -256,7 +257,7 @@ class BehanceCollectionExtractor(BehanceExtractor):
 
     def __init__(self, match):
         BehanceExtractor.__init__(self, match)
-        self.collection_id = match.group(1)
+        self.collection_id = match[1]
 
     def galleries(self):
         endpoint = "GetMoodboardItemsAndRecommendations"
