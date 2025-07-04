@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2024 Mike Fährmann
+# Copyright 2024-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -110,9 +110,9 @@ class ScrolllerExtractor(Extractor):
             url = "https://api.scrolller.com/api/v2/graphql"
             headers["Content-Type"] = "text/plain;charset=UTF-8"
 
-        return self.request(
+        return self.request_json(
             url, method="POST", headers=headers, data=util.json_dumps(data),
-        ).json()["data"]
+        )["data"]
 
     def _pagination(self, opname, variables, data=None):
         if data is None:

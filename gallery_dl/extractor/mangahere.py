@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2015-2023 Mike Fährmann
+# Copyright 2015-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -9,8 +9,7 @@
 """Extractors for https://www.mangahere.cc/"""
 
 from .common import ChapterExtractor, MangaExtractor
-from .. import text
-import re
+from .. import text, util
 
 
 class MangahereBase():
@@ -68,7 +67,7 @@ class MangahereChapterExtractor(MangahereBase, ChapterExtractor):
             page = self.request(self.url_fmt.format(self.part, pnum)).text
 
     def _get_title(self):
-        url = "{}/manga/{}/".format(self.root, self.part)
+        url = f"{self.root}/manga/{self.part}/"
         page = self.request(url).text
 
         try:
@@ -104,8 +103,8 @@ class MangahereMangaExtractor(MangahereBase, MangaExtractor):
             info, pos = text.extract(page, 'class="title3">', '<', pos)
             date, pos = text.extract(page, 'class="title2">', '<', pos)
 
-            match = re.match(
-                r"(?:Vol\.0*(\d+) )?Ch\.0*(\d+)(\S*)(?: - (.*))?", info)
+            match = util.re(
+                r"(?:Vol\.0*(\d+) )?Ch\.0*(\d+)(\S*)(?: - (.*))?").match(info)
             if match:
                 volume, chapter, minor, title = match.groups()
             else:

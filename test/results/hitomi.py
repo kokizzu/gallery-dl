@@ -92,7 +92,7 @@ __tests__ = (
     "extension" : "avif",
     "filename"  : str,
     "gallery_id": 1615823,
-    "group"     : [],
+    "group"     : ["mofumofuen"],
     "lang"      : "ja",
     "language"  : "Japanese",
     "num"       : range(1, 22),
@@ -221,6 +221,16 @@ __tests__ = (
     "#count"   : range(35, 50),
 
     "search_tags": "female:sole_female language:japanese artist:sumiya",
+},
+
+{
+    "#url"     : "https://hitomi.la/search.html?language%3Ajapanese%20-tag%3Aanimated%20group%3Aparadiddle#2",
+    "#comment" : "negative search tag (#7694)",
+    "#class"   : hitomi.HitomiSearchExtractor,
+    "#pattern" : hitomi.HitomiGalleryExtractor.pattern,
+    "#count"   : 41,
+
+    "search_tags": "language:japanese -tag:animated group:paradiddle",
 },
 
 {

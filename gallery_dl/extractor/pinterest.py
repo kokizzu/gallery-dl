@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2016-2023 Mike Fährmann
+# Copyright 2016-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -54,6 +54,15 @@ class PinterestExtractor(Extractor):
 
             pin.update(data)
             pin["count"] = len(files)
+
+            for key in (
+                "description",
+                "closeup_description",
+                "closeup_unified_description",
+            ):
+                value = pin.get(key)
+                if value:
+                    pin[key] = value.strip()
 
             yield Message.Directory, pin
             for pin["num"], file in enumerate(files, 1):
@@ -132,6 +141,9 @@ class PinterestExtractor(Extractor):
                              "extension": "txt",
                              "media_id": block.get("id")}
 
+                elif type == "story_pin_product_sticker_block":
+                    continue
+
                 elif type == "story_pin_static_sticker_block":
                     continue
 
@@ -161,8 +173,8 @@ class PinterestExtractor(Extractor):
 
     def _extract_image(self, page, block):
         sig = block.get("image_signature") or page["image_signature"]
-        url_base = "https://i.pinimg.com/originals/{}/{}/{}/{}.".format(
-            sig[0:2], sig[2:4], sig[4:6], sig)
+        url_base = (f"https://i.pinimg.com/originals"
+                    f"/{sig[0:2]}/{sig[2:4]}/{sig[4:6]}/{sig}.")
         url_jpg = url_base + "jpg"
         url_png = url_base + "png"
         url_webp = url_base + "webp"
@@ -202,7 +214,7 @@ class PinterestPinExtractor(PinterestExtractor):
 
     def __init__(self, match):
         PinterestExtractor.__init__(self, match)
-        self.pin_id = match.group(1)
+        self.pin_id = match[1]
         self.pin = None
 
     def metadata(self):
@@ -224,8 +236,8 @@ class PinterestBoardExtractor(PinterestExtractor):
 
     def __init__(self, match):
         PinterestExtractor.__init__(self, match)
-        self.user = text.unquote(match.group(1))
-        self.board_name = text.unquote(match.group(2))
+        self.user = text.unquote(match[1])
+        self.board_name = text.unquote(match[2])
         self.board = None
 
     def metadata(self):
@@ -237,7 +249,7 @@ class PinterestBoardExtractor(PinterestExtractor):
         pins = self.api.board_pins(board["id"])
 
         if board["section_count"] and self.config("sections", True):
-            base = "{}{}id:".format(self.root, board["url"])
+            base = f"{self.root}{board['url']}id:"
             data = {"_extractor": PinterestSectionExtractor}
             sections = [(base + section["id"], data)
                         for section in self.api.board_sections(board["id"])]
@@ -254,7 +266,7 @@ class PinterestUserExtractor(PinterestExtractor):
 
     def __init__(self, match):
         PinterestExtractor.__init__(self, match)
-        self.user = text.unquote(match.group(1))
+        self.user = text.unquote(match[1])
 
     def items(self):
         for board in self.api.boards(self.user):
@@ -273,7 +285,7 @@ class PinterestAllpinsExtractor(PinterestExtractor):
 
     def __init__(self, match):
         PinterestExtractor.__init__(self, match)
-        self.user = text.unquote(match.group(1))
+        self.user = text.unquote(match[1])
 
     def metadata(self):
         return {"user": self.user}
@@ -291,7 +303,7 @@ class PinterestCreatedExtractor(PinterestExtractor):
 
     def __init__(self, match):
         PinterestExtractor.__init__(self, match)
-        self.user = text.unquote(match.group(1))
+        self.user = text.unquote(match[1])
 
     def metadata(self):
         return {"user": self.user}
@@ -311,9 +323,9 @@ class PinterestSectionExtractor(PinterestExtractor):
 
     def __init__(self, match):
         PinterestExtractor.__init__(self, match)
-        self.user = text.unquote(match.group(1))
-        self.board_slug = text.unquote(match.group(2))
-        self.section_slug = text.unquote(match.group(3))
+        self.user = text.unquote(match[1])
+        self.board_slug = text.unquote(match[2])
+        self.section_slug = text.unquote(match[3])
         self.section = None
 
     def metadata(self):
@@ -339,7 +351,7 @@ class PinterestSearchExtractor(PinterestExtractor):
 
     def __init__(self, match):
         PinterestExtractor.__init__(self, match)
-        self.search = text.unquote(match.group(1))
+        self.search = text.unquote(match[1])
 
     def metadata(self):
         return {"search": self.search}
@@ -381,8 +393,8 @@ class PinterestPinitExtractor(PinterestExtractor):
     example = "https://pin.it/abcde"
 
     def items(self):
-        url = "https://api.pinterest.com/url_shortener/{}/redirect/".format(
-            self.groups[0])
+        url = (f"https://api.pinterest.com/url_shortener"
+               f"/{self.groups[0]}/redirect/")
         location = self.request_location(url)
         if not location or not PinterestPinExtractor.pattern.match(location):
             raise exception.NotFoundError("pin")
@@ -508,7 +520,7 @@ class PinterestAPI():
         return self._pagination("BaseSearch", options)
 
     def _call(self, resource, options):
-        url = "{}/resource/{}Resource/get/".format(self.root, resource)
+        url = f"{self.root}/resource/{resource}Resource/get/"
         params = {
             "data"      : util.json_dumps({"options": options}),
             "source_url": "",

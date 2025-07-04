@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2024 Mike Fährmann
+# Copyright 2024-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -9,7 +9,8 @@
 """Extractors for https://rule34.xyz/"""
 
 from .booru import BooruExtractor
-from .. import text
+from .. import text, exception
+from ..cache import cache
 import collections
 
 BASE_PATTERN = r"(?:https?://)?rule34\.xyz"
@@ -59,8 +60,8 @@ class Rule34xyzExtractor(BooruExtractor):
 
         post_id = post["id"]
         root = self.root_cdn if files[fmt][0] else self.root
-        post["file_url"] = url = "{}/posts/{}/{}/{}.{}".format(
-            root, post_id // 1000, post_id, post_id, extension)
+        post["file_url"] = url = \
+            f"{root}/posts/{post_id // 1000}/{post_id}/{post_id}.{extension}"
         post["format_id"] = fmt
         post["format"] = extension.partition(".")[0]
 
@@ -86,11 +87,11 @@ class Rule34xyzExtractor(BooruExtractor):
             post["tags_" + types[type]] = values
 
     def _fetch_post(self, post_id):
-        url = "{}/api/v2/post/{}".format(self.root, post_id)
-        return self.request(url).json()
+        url = f"{self.root}/api/v2/post/{post_id}"
+        return self.request_json(url)
 
     def _pagination(self, endpoint, params=None):
-        url = "{}/api{}".format(self.root, endpoint)
+        url = f"{self.root}/api{endpoint}"
 
         if params is None:
             params = {}
@@ -102,7 +103,7 @@ class Rule34xyzExtractor(BooruExtractor):
         threshold = self.per_page
 
         while True:
-            data = self.request(url, method="POST", json=params).json()
+            data = self.request_json(url, method="POST", json=params)
 
             yield from data["items"]
 
@@ -110,6 +111,26 @@ class Rule34xyzExtractor(BooruExtractor):
                 return
             params["Skip"] += self.per_page
             params["cursor"] = data["cursor"]
+
+    def login(self):
+        username, password = self._get_auth_info()
+        if username:
+            self.session.headers["Authorization"] = \
+                self._login_impl(username, password)
+
+    @cache(maxage=3650*86400, keyarg=1)
+    def _login_impl(self, username, password):
+        self.log.info("Logging in as %s", username)
+
+        url = f"{self.root}/api/v2/auth/signin"
+        data = {"email": username, "password": password}
+        response = self.request_json(
+            url, method="POST", json=data, fatal=False)
+
+        if jwt := response.get("jwt"):
+            return f"Bearer {jwt}"
+        raise exception.AuthenticationError(
+            (msg := response.get("message")) and f'"{msg}"')
 
 
 class Rule34xyzPostExtractor(Rule34xyzExtractor):

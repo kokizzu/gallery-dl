@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2017-2023 Mike Fährmann
+# Copyright 2017-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -141,7 +141,7 @@ class RedditExtractor(Extractor):
 
                     match = match_submission(url)
                     if match:
-                        extra.append(match.group(1))
+                        extra.append(match[1])
                     elif not match_user(url) and not match_subreddit(url):
                         if previews and "comment" not in data and \
                                 "preview" in data:
@@ -309,7 +309,7 @@ class RedditSubmissionExtractor(RedditExtractor):
 
     def __init__(self, match):
         RedditExtractor.__init__(self, match)
-        self.submission_id = match.group(1)
+        self.submission_id = match[1]
 
     def submissions(self):
         return (self.api.submission(self.submission_id),)
@@ -326,17 +326,17 @@ class RedditImageExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        domain = match.group(1)
-        self.path = match.group(2)
+        domain = match[1]
+        self.path = match[2]
         if domain == "preview.redd.it":
             self.domain = "i.redd.it"
             self.query = ""
         else:
             self.domain = domain
-            self.query = match.group(3) or ""
+            self.query = match[3] or ""
 
     def items(self):
-        url = "https://{}/{}{}".format(self.domain, self.path, self.query)
+        url = f"https://{self.domain}/{self.path}{self.query}"
         data = text.nameext_from_url(url)
         yield Message.Directory, data
         yield Message.Url, url, data
@@ -355,8 +355,7 @@ class RedditRedirectExtractor(Extractor):
         sub_type, subreddit, share_url = self.groups
         if sub_type == "u":
             sub_type = "user"
-        url = "https://www.reddit.com/{}/{}/s/{}".format(
-            sub_type, subreddit, share_url)
+        url = f"https://www.reddit.com/{sub_type}/{subreddit}/s/{share_url}"
         location = self.request_location(url, notfound="submission")
         data = {"_extractor": RedditSubmissionExtractor}
         yield Message.Queue, location, data
@@ -478,8 +477,8 @@ class RedditAPI():
 
         if response.status_code != 200:
             self.log.debug("Server response: %s", data)
-            raise exception.AuthenticationError('"{}: {}"'.format(
-                data.get("error"), data.get("message")))
+            raise exception.AuthenticationError(
+                f"\"{data.get('error')}: {data.get('message')}\"")
         return "Bearer " + data["access_token"]
 
     def _call(self, endpoint, params):
@@ -573,8 +572,7 @@ class RedditAPI():
         sid = self.extractor.config(key)
         return self._decode(sid.rpartition("_")[2].lower()) if sid else default
 
-    @staticmethod
-    def _decode(sid):
+    def _decode(self, sid):
         return util.bdecode(sid, "0123456789abcdefghijklmnopqrstuvwxyz")
 
 
