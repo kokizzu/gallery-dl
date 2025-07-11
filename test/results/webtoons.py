@@ -13,8 +13,8 @@ __tests__ = (
     "#url"     : "https://www.webtoons.com/en/comedy/safely-endangered/ep-572-earth/viewer?title_no=352&episode_no=572",
     "#category": ("", "webtoons", "episode"),
     "#class"   : webtoons.WebtoonsEpisodeExtractor,
-    "#count"       : 5,
-    "#urls"        : (
+    "#count"   : 5,
+    "#results" : (
         "https://swebtoon-phinf.pstatic.net/20200513_191/1589322488148XfdRr_PNG/15893224850013525720.png?type=opti",
         "https://swebtoon-phinf.pstatic.net/20200513_143/1589322489499KJLvU_PNG/15893224866183525723.png?type=opti",
         "https://swebtoon-phinf.pstatic.net/20200513_281/15893224881499wbH7_PNG/15893224865073525729.png?type=opti",
@@ -46,6 +46,20 @@ __tests__ = (
 },
 
 {
+    "#url"     : "https://www.webtoons.com/en/comedy/safely-endangered/ep-572-earth/viewer?title_no=352&episode_no=572",
+    "#comment" : "thumbnails (#6468 #7441)",
+    "#class"   : webtoons.WebtoonsEpisodeExtractor,
+    "#options" : {"thumbnails": True},
+    "#range"   : "1",
+    "#results" : "https://swebtoon-phinf.pstatic.net/20200513_37/1589322553469E5p76_PNG/thumb_15893224866533525729.png",
+    "#sha1_content": "e01e70610821df6ece601393eb6fd7d80fc42f9a",
+
+    "count": 5,
+    "num"  : 0,
+    "type" : "thumbnail",
+},
+
+{
     "#url"     : "https://www.webtoons.com/en/challenge/punderworld/happy-earth-day-/viewer?title_no=312584&episode_no=40",
     "#category": ("", "webtoons", "episode"),
     "#class"   : webtoons.WebtoonsEpisodeExtractor,
@@ -64,7 +78,7 @@ __tests__ = (
     "#url"     : "https://www.webtoons.com/en/canvas/i-want-to-be-a-cute-anime-girl/209-the-storys-story/viewer?title_no=349416&episode_no=214",
     "#category": ("", "webtoons", "episode"),
     "#class"   : webtoons.WebtoonsEpisodeExtractor,
-    "#urls"    : (
+    "#results" : (
         "https://swebtoon-phinf.pstatic.net/20220121_262/1642763563000TUsiC_JPEG/7ddc535a-0bde-40df-ab62-f912aed1c751.jpg",
         "https://swebtoon-phinf.pstatic.net/20220121_152/1642763564219c8T9I_JPEG/73ccdf9f-c46c-4760-8553-799713300fd7.jpg",
         "https://swebtoon-phinf.pstatic.net/20220121_80/16427635653964Eh5i_JPEG/1bd3c498-656b-4b1f-bf22-e25c01a01679.jpg",
@@ -83,7 +97,7 @@ __tests__ = (
     "#category": ("", "webtoons", "episode"),
     "#class"   : webtoons.WebtoonsEpisodeExtractor,
     "#options" : {"quality": 50},
-    "#urls"    : (
+    "#results" : (
         "https://swebtoon-phinf.pstatic.net/20210629_102/1624911944660PIYD2_JPEG/27c5312d-7b9b-4b75-8026-526e9a55331a.jpg?type=q50",
         "https://swebtoon-phinf.pstatic.net/20210629_295/1624911951107dhQEw_JPEG/fc4bd86a-effc-4f0e-88d5-8c48d6ec3902.jpg?type=q50",
         "https://swebtoon-phinf.pstatic.net/20210629_293/16249119579830kbnl_JPEG/96203608-31e7-4f1c-a9e0-db5d43457884.jpg?type=q50",
@@ -102,7 +116,7 @@ __tests__ = (
     "#category": ("", "webtoons", "episode"),
     "#class"   : webtoons.WebtoonsEpisodeExtractor,
     "#options" : {"quality": {"jpg": "q0", "jpeg": "q100", "png": False}},
-    "#urls"    : (
+    "#results" : (
         "https://swebtoon-phinf.pstatic.net/20240125_32/17061125731244mMCw_JPEG/0001.JPEG?type=q100",
         "https://swebtoon-phinf.pstatic.net/20240125_290/1706112575827OXqUk_JPEG/0059.JPEG?type=q100",
         "https://swebtoon-phinf.pstatic.net/20240125_211/1706112575860p6rEU_JPEG/0060.JPEG?type=q100",
@@ -127,6 +141,25 @@ __tests__ = (
     "page"      : range(1, 2),
     "title_no"  : 919,
     "episode_no": range(1, 14),
+},
+
+{
+    "#url"     : "https://www.webtoons.com/en/comedy/live-with-yourself/list?title_no=919",
+    "#comment" : "banner (#6468)",
+    "#category": ("", "webtoons", "comic"),
+    "#class"   : webtoons.WebtoonsComicExtractor,
+    "#options" : {"banners": True},
+    "#range"   : "1-3",
+    "#results" : (
+        "https://swebtoon-phinf.pstatic.net/20190126_226/1548461599138G7THv_PNG/03_EC9E91ED9288EC8381EC84B8_PC_ECBA90EBA6ADED84B0.png",
+        "https://www.webtoons.com/en/comedy/live-with-yourself/ep-12-aint-gonna-face-no-defeat/viewer?title_no=919&episode_no=14",
+        "https://www.webtoons.com/en/comedy/live-with-yourself/interlude-2/viewer?title_no=919&episode_no=13",
+        "https://www.webtoons.com/en/comedy/live-with-yourself/ep-11-can-barely-stand-on-my-feet/viewer?title_no=919&episode_no=12",
+    ),
+
+    "?type"      : "banner",
+    "title_no"   : 919,
+    "?episode_no": range(12, 14),
 },
 
 {
@@ -163,7 +196,7 @@ __tests__ = (
 {
     "#url"     : "https://www.webtoons.com/p/community/en/u/g6vj8",
     "#class"   : webtoons.WebtoonsArtistExtractor,
-    "#urls"    : (
+    "#results" : (
         "https://www.webtoons.com/en/canvas/scoob-and-shag/list?title_no=210827",
         "https://www.webtoons.com/en/canvas/sparkle-kid/list?title_no=205304",
     ),

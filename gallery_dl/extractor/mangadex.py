@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2018-2023 Mike Fährmann
+# Copyright 2018-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -44,7 +44,7 @@ class MangadexExtractor(Extractor):
     def _items_manga(self):
         data = {"_extractor": MangadexMangaExtractor}
         for manga in self.manga():
-            url = "{}/title/{}".format(self.root, manga["id"])
+            url = f"{self.root}/title/{manga['id']}"
             yield Message.Queue, url, data
 
     def _transform(self, chapter):
@@ -112,16 +112,16 @@ class MangadexChapterExtractor(MangadexExtractor):
             data = self._transform(chapter)
 
         if data.get("_external_url") and not data["count"]:
-            raise exception.StopExtraction(
-                "Chapter %s%s is not available on MangaDex and can instead be "
-                "read on the official publisher's website at %s.",
-                data["chapter"], data["chapter_minor"], data["_external_url"])
+            raise exception.AbortExtraction(
+                f"Chapter {data['chapter']}{data['chapter_minor']} is not "
+                f"available on MangaDex and can instead be read on the "
+                f"official publisher's website at {data['_external_url']}.")
 
         yield Message.Directory, data
 
         server = self.api.athome_server(self.uuid)
         chapter = server["chapter"]
-        base = "{}/data/{}/".format(server["baseUrl"], chapter["hash"])
+        base = f"{server['baseUrl']}/data/{chapter['hash']}/"
 
         enum = util.enumerate_reversed if self.config(
             "page-reverse") else enumerate
@@ -172,11 +172,11 @@ class MangadexListExtractor(MangadexExtractor):
                "/01234567-89ab-cdef-0123-456789abcdef/NAME")
 
     def __init__(self, match):
-        MangadexExtractor.__init__(self, match)
-        if match.group(2) == "feed":
+        if match[2] == "feed":
             self.subcategory = "list-feed"
         else:
             self.items = self._items_manga
+        MangadexExtractor.__init__(self, match)
 
     def chapters(self):
         return self.api.list_feed(self.uuid)
@@ -199,7 +199,7 @@ class MangadexAuthorExtractor(MangadexExtractor):
     def items(self):
         for manga in self.api.manga_author(self.uuid):
             manga["_extractor"] = MangadexMangaExtractor
-            url = "{}/title/{}".format(self.root, manga["id"])
+            url = f"{self.root}/title/{manga['id']}"
             yield Message.Queue, url, manga
 
 
@@ -301,8 +301,8 @@ class MangadexAPI():
         self.extractor.log.debug("Using client-id '%s…'", self.client_id[:24])
         url = ("https://auth.mangadex.org/realms/mangadex"
                "/protocol/openid-connect/token")
-        data = self.extractor.request(
-            url, method="POST", data=data, fatal=None).json()
+        data = self.extractor.request_json(
+            url, method="POST", data=data, fatal=None)
 
         try:
             access_token = data["access_token"]
@@ -328,8 +328,8 @@ class MangadexAPI():
             json = {"username": username, "password": password}
 
         self.extractor.log.debug("Using legacy login method")
-        data = self.extractor.request(
-            url, method="POST", json=json, fatal=None).json()
+        data = self.extractor.request_json(
+            url, method="POST", json=json, fatal=None)
         if data.get("result") != "ok":
             raise exception.AuthenticationError()
 
@@ -354,10 +354,10 @@ class MangadexAPI():
                 self.extractor.wait(until=until)
                 continue
 
-            msg = ", ".join('{title}: "{detail}"'.format_map(error)
+            msg = ", ".join(f'{error["title"]}: "{error["detail"]}"'
                             for error in response.json()["errors"])
-            raise exception.StopExtraction(
-                "%s %s (%s)", response.status_code, response.reason, msg)
+            raise exception.AbortExtraction(
+                f"{response.status_code} {response.reason} ({msg})")
 
     def _pagination_chapters(self, endpoint, params=None, auth=False):
         if params is None:
@@ -384,6 +384,8 @@ class MangadexAPI():
             ratings = config("ratings")
             if ratings is None:
                 ratings = ("safe", "suggestive", "erotica", "pornographic")
+            elif isinstance(ratings, str):
+                ratings = ratings.split(",")
             params["contentRating[]"] = ratings
         params["offset"] = 0
 

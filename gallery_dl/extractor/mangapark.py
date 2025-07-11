@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2015-2023 Mike Fährmann
+# Copyright 2015-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -11,7 +11,6 @@
 from .common import ChapterExtractor, Extractor, Message
 from .. import text, util, exception
 from ..cache import memcache
-import re
 
 BASE_PATTERN = (r"(?:https?://)?(?:www\.)?(?:"
                 r"(?:manga|comic|read)park\.(?:com|net|org|me|io|to)|"
@@ -22,17 +21,14 @@ BASE_PATTERN = (r"(?:https?://)?(?:www\.)?(?:"
 class MangaparkBase():
     """Base class for mangapark extractors"""
     category = "mangapark"
-    _match_title = None
 
     def _parse_chapter_title(self, title):
-        if not self._match_title:
-            MangaparkBase._match_title = re.compile(
-                r"(?i)"
-                r"(?:vol(?:\.|ume)?\s*(\d+)\s*)?"
-                r"ch(?:\.|apter)?\s*(\d+)([^\s:]*)"
-                r"(?:\s*:\s*(.*))?"
-            ).match
-        match = self._match_title(title)
+        match = util.re(
+            r"(?i)"
+            r"(?:vol(?:\.|ume)?\s*(\d+)\s*)?"
+            r"ch(?:\.|apter)?\s*(\d+)([^\s:]*)"
+            r"(?:\s*:\s*(.*))?"
+        ).match(title)
         return match.groups() if match else (0, 0, "", "")
 
     @memcache(keyarg=1)
@@ -68,8 +64,8 @@ class MangaparkBase():
             "variables"    : variables,
             "operationName": opname,
         }
-        return self.request(
-            url, method="POST", json=data).json()["data"].popitem()[1]
+        return self.request_json(
+            url, method="POST", json=data)["data"].popitem()[1]
 
 
 class MangaparkChapterExtractor(MangaparkBase, ChapterExtractor):
@@ -79,7 +75,7 @@ class MangaparkChapterExtractor(MangaparkBase, ChapterExtractor):
     example = "https://mangapark.net/title/MANGA/12345-en-ch.01"
 
     def __init__(self, match):
-        self.root = text.root_from_url(match.group(0))
+        self.root = text.root_from_url(match[0])
         ChapterExtractor.__init__(self, match, False)
 
     def metadata(self, _):
@@ -119,8 +115,8 @@ class MangaparkMangaExtractor(MangaparkBase, Extractor):
     example = "https://mangapark.net/title/12345-MANGA"
 
     def __init__(self, match):
-        self.root = text.root_from_url(match.group(0))
-        self.manga_id = int(match.group(1))
+        self.root = text.root_from_url(match[0])
+        self.manga_id = int(match[1])
         Extractor.__init__(self, match)
 
     def items(self):
@@ -180,8 +176,8 @@ class MangaparkMangaExtractor(MangaparkBase, Extractor):
                     not lang or data["lang"] == lang):
                 return data["id"]
 
-        raise exception.StopExtraction(
-            "'%s' does not match any available source", source)
+        raise exception.AbortExtraction(
+            f"'{source}' does not match any available source")
 
 
 QUERIES = {

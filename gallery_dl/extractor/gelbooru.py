@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014-2023 Mike Fährmann
+# Copyright 2014-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -30,7 +30,7 @@ class GelbooruBase():
         params["user_id"] = self.user_id
 
         url = self.root + "/index.php?page=dapi&q=index&json=1"
-        data = self.request(url, params=params).json()
+        data = self.request_json(url, params=params)
 
         if not key:
             return data
@@ -73,7 +73,7 @@ class GelbooruBase():
                 if id:
                     tag = "id:" + op
                     tags = [t for t in tags if not t.startswith(tag)]
-                tags = "{} id:{}".format(" ".join(tags), op)
+                tags = f"{' '.join(tags)} id:{op}"
 
         while True:
             posts = self._api_request(params)
@@ -113,7 +113,7 @@ class GelbooruBase():
             post["_fallback"] = (url,)
             md5 = post["md5"]
             root = text.root_from_url(post["preview_url"])
-            path = "/images/{}/{}/{}.webm".format(md5[0:2], md5[2:4], md5)
+            path = f"/images/{md5[0:2]}/{md5[2:4]}/{md5}.webm"
             url = root + path
         return url
 
@@ -292,7 +292,7 @@ class GelbooruRedirectExtractor(GelbooruBase, Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.url_base64 = match.group(1)
+        self.url_base64 = match[1]
 
     def items(self):
         url = text.ensure_http_scheme(binascii.a2b_base64(

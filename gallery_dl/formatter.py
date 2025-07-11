@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2021-2023 Mike Fährmann
+# Copyright 2021-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -221,7 +221,7 @@ class FStringFormatter():
     """Generate text by evaluating an f-string literal"""
 
     def __init__(self, fstring, default=NONE, fmt=None):
-        self.format_map = util.compile_expression('f"""' + fstring + '"""')
+        self.format_map = util.compile_expression(f'f"""{fstring}"""')
 
 
 class TemplateFormatter(StringFormatter):
@@ -302,7 +302,7 @@ def _parse_optional(format_spec, default):
     fmt = _build_format_func(format_spec, default)
 
     def optional(obj):
-        return before + fmt(obj) + after if obj else ""
+        return f"{before}{fmt(obj)}{after}" if obj else ""
     return optional
 
 
@@ -385,6 +385,27 @@ def _parse_join(format_spec, default):
     return apply_join
 
 
+def _parse_map(format_spec, default):
+    key, _, format_spec = format_spec.partition(_SEPARATOR)
+    key = key[1:]
+    fmt = _build_format_func(format_spec, default)
+
+    def map_(obj):
+        if not obj or isinstance(obj, str):
+            return fmt(obj)
+
+        results = []
+        for item in obj:
+            if isinstance(item, dict):
+                value = item.get(key, ...)
+                results.append(default if value is ... else value)
+            else:
+                results.append(item)
+        return fmt(results)
+
+    return map_
+
+
 def _parse_replace(format_spec, default):
     old, new, format_spec = format_spec.split(_SEPARATOR, 2)
     old = old[1:]
@@ -463,8 +484,7 @@ class Literal():
     # __getattr__, __getattribute__, and __class_getitem__
     # are all slower than regular __getitem__
 
-    @staticmethod
-    def __getitem__(key):
+    def __getitem__(self, key):
         return key
 
 
@@ -485,9 +505,11 @@ _CONVERSIONS = {
     "C": string.capwords,
     "j": util.json_dumps,
     "t": str.strip,
-    "L": len,
+    "n": len,
+    "L": util.code_to_language,
     "T": util.datetime_to_timestamp_string,
     "d": text.parse_timestamp,
+    "D": util.to_datetime,
     "U": text.unescape,
     "H": lambda s: text.unescape(text.remove_html(s)),
     "g": text.slugify,
@@ -506,6 +528,7 @@ _FORMAT_SPECIFIERS = {
     "D": _parse_datetime,
     "J": _parse_join,
     "L": _parse_maxlen,
+    "M": _parse_map,
     "O": _parse_offset,
     "R": _parse_replace,
     "S": _parse_sort,

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2019-2023 Mike Fährmann
+# Copyright 2019-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -39,18 +39,15 @@ class IssuuPublicationExtractor(IssuuBase, GalleryExtractor):
         doc["date"] = text.parse_datetime(
             doc["originalPublishDateInISOString"], "%Y-%m-%dT%H:%M:%S.%fZ")
 
-        self._cnt = text.parse_int(doc["pageCount"])
-        self._tpl = "https://{}/{}-{}/jpg/page_{{}}.jpg".format(
-            "image.isu.pub",  # data["config"]["hosts"]["image"],
-            doc["revisionId"],
-            doc["publicationId"],
-        )
+        self.count = text.parse_int(doc["pageCount"])
+        self.base = (f"https://image.isu.pub/{doc['revisionId']}-"
+                     f"{doc['publicationId']}/jpg/page_")
 
         return {"document": doc}
 
     def images(self, page):
-        fmt = self._tpl.format
-        return [(fmt(i), None) for i in range(1, self._cnt + 1)]
+        return [(f"{self.base}{i}.jpg", None)
+                for i in range(1, self.count + 1)]
 
 
 class IssuuUserExtractor(IssuuBase, Extractor):

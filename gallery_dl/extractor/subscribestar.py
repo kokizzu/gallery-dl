@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2020-2023 Mike Fährmann
+# Copyright 2020-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -11,7 +11,6 @@
 from .common import Extractor, Message
 from .. import text, util, exception
 from ..cache import cache
-import re
 
 BASE_PATTERN = r"(?:https?://)?(?:www\.)?subscribestar\.(com|adult)"
 
@@ -45,8 +44,7 @@ class SubscribestarExtractor(Extractor):
             if "<html><body>" in content:
                 data["content"] = content = text.extr(
                     content, "<body>", "</body>")
-            data["title"] = text.unescape(
-                text.rextract(content, "<h1>", "</h1>")[0] or "")
+            data["title"] = text.unescape(text.rextr(content, "<h1>", "</h1>"))
 
             yield Message.Directory, data
             for num, item in enumerate(media, 1):
@@ -67,8 +65,8 @@ class SubscribestarExtractor(Extractor):
             if response.history and (
                     "/verify_subscriber" in response.url or
                     "/age_confirmation_warning" in response.url):
-                raise exception.StopExtraction(
-                    "HTTP redirect to %s", response.url)
+                raise exception.AbortExtraction(
+                    f"HTTP redirect to {response.url}")
 
             content = response.content
             if len(content) < 250 and b">redirected<" in content:
@@ -121,7 +119,7 @@ class SubscribestarExtractor(Extractor):
             if errors:
                 self.log.debug(errors)
                 try:
-                    msg = '"{}"'.format(errors.popitem()[1])
+                    msg = f'"{errors.popitem()[1]}"'
                 except Exception:
                     msg = None
                 raise exception.AuthenticationError(msg)
@@ -159,8 +157,8 @@ class SubscribestarExtractor(Extractor):
         attachments = text.extr(
             html, 'class="uploads-docs"', 'class="post-edit_form"')
         if attachments:
-            for att in re.split(
-                    r'class="doc_preview[" ]', attachments)[1:]:
+            for att in util.re(r'class="doc_preview[" ]').split(
+                    attachments)[1:]:
                 media.append({
                     "id"  : text.parse_int(text.extr(
                         att, 'data-upload-id="', '"')),
@@ -173,8 +171,8 @@ class SubscribestarExtractor(Extractor):
         audios = text.extr(
             html, 'class="uploads-audios"', 'class="post-edit_form"')
         if audios:
-            for audio in re.split(
-                    r'class="audio_preview-data[" ]', audios)[1:]:
+            for audio in util.re(r'class="audio_preview-data[" ]').split(
+                    audios)[1:]:
                 media.append({
                     "id"  : text.parse_int(text.extr(
                         audio, 'data-upload-id="', '"')),
@@ -224,7 +222,7 @@ class SubscribestarUserExtractor(SubscribestarExtractor):
 
     def posts(self):
         needle_next_page = 'data-role="infinite_scroll-next_page" href="'
-        page = self.request("{}/{}".format(self.root, self.item)).text
+        page = self.request(f"{self.root}/{self.item}").text
 
         while True:
             posts = page.split('<div class="post ')[1:]
@@ -235,7 +233,7 @@ class SubscribestarUserExtractor(SubscribestarExtractor):
             url = text.extr(posts[-1], needle_next_page, '"')
             if not url:
                 return
-            page = self.request(self.root + text.unescape(url)).json()["html"]
+            page = self.request_json(self.root + text.unescape(url))["html"]
 
 
 class SubscribestarPostExtractor(SubscribestarExtractor):
@@ -245,7 +243,7 @@ class SubscribestarPostExtractor(SubscribestarExtractor):
     example = "https://www.subscribestar.com/posts/12345"
 
     def posts(self):
-        url = "{}/posts/{}".format(self.root, self.item)
+        url = f"{self.root}/posts/{self.item}"
         return (self.request(url).text,)
 
     def _data_from_post(self, html):

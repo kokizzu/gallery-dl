@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2015-2023 Mike Fährmann
+# Copyright 2015-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 
 import sys
-from ..util import re_compile
+from ..text import re_compile
 
 modules = [
     "2ch",
@@ -40,9 +40,11 @@ modules = [
     "chevereto",
     "cien",
     "civitai",
+    "comick",
     "comicvine",
     "cyberdrop",
     "danbooru",
+    "dankefuerslesen",
     "desktopography",
     "deviantart",
     "discord",
@@ -63,6 +65,8 @@ modules = [
     "gelbooru",
     "gelbooru_v01",
     "gelbooru_v02",
+    "girlsreleased",
+    "girlswithmuscle",
     "gofile",
     "hatenablog",
     "hentai2read",
@@ -91,9 +95,8 @@ modules = [
     "jschan",
     "kabeuchi",
     "keenspot",
-    "kemonoparty",
+    "kemono",
     "khinsider",
-    "koharu",
     "komikcast",
     "lensdump",
     "lexica",
@@ -108,13 +111,13 @@ modules = [
     "manganelo",
     "mangapark",
     "mangaread",
-    "mangasee",
     "mangoxo",
     "misskey",
     "motherless",
     "myhentaigallery",
     "myportfolio",
-    "naver",
+    "naverblog",
+    "naverchzzk",
     "naverwebtoon",
     "nekohouse",
     "newgrounds",
@@ -123,6 +126,7 @@ modules = [
     "nitter",
     "nozomi",
     "nsfwalbum",
+    "nudostar",
     "paheal",
     "patreon",
     "pexels",
@@ -142,9 +146,11 @@ modules = [
     "pornhub",
     "pornpics",
     "postmill",
+    "rawkuma",
     "reactor",
     "readcomiconline",
     "realbooru",
+    "redbust",
     "reddit",
     "redgifs",
     "rule34us",
@@ -153,6 +159,7 @@ modules = [
     "saint",
     "sankaku",
     "sankakucomplex",
+    "schalenetwork",
     "scrolller",
     "seiga",
     "senmanga",

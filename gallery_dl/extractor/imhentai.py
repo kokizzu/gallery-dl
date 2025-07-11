@@ -38,7 +38,7 @@ class ImhentaiExtractor(BaseExtractor):
                 yield Message.Queue, base + gallery_id, data
                 prev = gallery_id
 
-            href = text.rextract(page, "class='page-link' href='", "'")[0]
+            href = text.rextr(page, "class='page-link' href='", "'")
             if not href or href == "#":
                 return
             if href[0] == "/":
@@ -85,7 +85,7 @@ class ImhentaiGalleryExtractor(ImhentaiExtractor, GalleryExtractor):
     def __init__(self, match):
         ImhentaiExtractor.__init__(self, match)
         self.gallery_id = self.groups[-1]
-        self.gallery_url = "{}/gallery/{}/".format(self.root, self.gallery_id)
+        self.page_url = f"{self.root}/gallery/{self.gallery_id}/"
 
     def metadata(self, page):
         extr = text.extract_from(page)

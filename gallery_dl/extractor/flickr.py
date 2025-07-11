@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2017-2023 Mike Fährmann
+# Copyright 2017-2025 Mike Fährmann
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -134,8 +134,8 @@ class FlickrAlbumExtractor(FlickrExtractor):
 
         for album in self.api.photosets_getList(self.user["nsid"]):
             self.api._clean_info(album).update(data)
-            url = "https://www.flickr.com/photos/{}/albums/{}".format(
-                self.user["path_alias"], album["id"])
+            url = (f"https://www.flickr.com/photos/{self.user['path_alias']}"
+                   f"/albums/{album['id']}")
             yield Message.Queue, url, album
 
     def metadata(self):
@@ -451,7 +451,7 @@ class FlickrAPI(oauth.OAuth1API):
                 raise exception.AuthenticationError(msg)
             elif data["code"] == 99:
                 raise exception.AuthorizationError(msg)
-            raise exception.StopExtraction("API request failed: %s", msg)
+            raise exception.AbortExtraction(f"API request failed: {msg}")
         return data
 
     def _pagination(self, method, params, key="photos"):
@@ -585,8 +585,7 @@ class FlickrAPI(oauth.OAuth1API):
         if "license" in photo:
             photo["license_name"] = self.LICENSES.get(photo["license"])
 
-    @staticmethod
-    def _clean_info(info):
+    def _clean_info(self, info):
         info["title"] = info["title"]["_content"]
         info["description"] = info["description"]["_content"]
         return info

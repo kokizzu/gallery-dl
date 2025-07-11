@@ -78,8 +78,8 @@ Description
 
     If this is an ``object``, it must contain Python expressions mapping to the
     filename format strings to use.
-    These expressions are evaluated in the order as specified in Python 3.6+
-    and in an undetermined order in Python 3.4 and 3.5.
+    These expressions are evaluated in the specified order until one evaluates
+    to ``True``.
 
     The available replacement keys depend on the extractor used. A list
     of keys for a specific one can be acquired by calling *gallery-dl*
@@ -207,11 +207,12 @@ Default
     ``"auto"``
 Example
     * ``"/!? (){}"``
-    * ``{" ": "_", "/": "-", "|": "-", ":": "_-_", "*": "_+_"}``
+    * ``{"/": "_", "+": "_+_", "({[": "(", "]})": ")", "a-z": "*"}``
 Description
-    | A string of characters to be replaced with the value of
+    | A ``string`` of characters to be replaced with the value of
       `path-replace <extractor.*.path-replace_>`__
-    | or an object mapping invalid/unwanted characters to their replacements
+    | or an ``object`` mapping invalid/unwanted characters, character sets,
+      or character ranges to their replacements
     | for generated path segment names.
 
     Special values:
@@ -390,13 +391,13 @@ Default
         ``[E621]``,
         ``[foolfuuka]:search``,
         ``itaku``,
-        ``koharu``,
         ``newgrounds``,
         ``[philomena]``,
-        ``pixiv:novel``,
+        ``pixiv-novel``,
         ``plurk``,
         ``poipiku`` ,
         ``pornpics``,
+        ``schalenetwork``,
         ``scrolller``,
         ``soundgasm``,
         ``urlgalleries``,
@@ -453,25 +454,27 @@ Description
     * ``atfbooru`` (*)
     * ``bluesky``
     * ``booruvar`` (*)
-    * ``coomerparty``
+    * ``coomer``
     * ``danbooru`` (*)
     * ``deviantart``
     * ``e621`` (*)
     * ``e6ai`` (*)
     * ``e926`` (*)
     * ``exhentai``
+    * ``girlswithmuscle``
     * ``horne`` (R)
     * ``idolcomplex``
     * ``imgbb``
     * ``inkbunny``
-    * ``kemonoparty``
-    * ``koharu``
+    * ``kemono``
     * ``mangadex``
     * ``mangoxo``
     * ``newgrounds``
     * ``nijie`` (R)
     * ``pillowfort``
+    * ``rule34xyz``
     * ``sankaku``
+    * ``schalenetwork``
     * ``scrolller``
     * ``seiga``
     * ``subscribestar``
@@ -663,6 +666,7 @@ Type
 Default
     * ``"gallery-dl/VERSION"``: ``[Danbooru]``, ``mangadex``, ``weasyl``
     * ``"gallery-dl/VERSION (by mikf)"``: ``[E621]``
+    * ``"net.umanle.arca.android.playstore/0.9.75"``: ``arcalive``
     * ``"Patreon/72.2.28 (Android; Android 14; Scale/2.10)"``: ``patreon``
     * ``"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/LATEST.0.0.0 Safari/537.36"``: ``instagram``
     * ``"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:LATEST) Gecko/20100101 Firefox/LATEST"``: otherwise
@@ -672,20 +676,16 @@ Description
     Setting this value to ``"browser"`` will try to automatically detect
     and use the ``User-Agent`` header of the system's default browser.
 
-    Note:
-    This option has *no* effect if
-    `extractor.browser <extractor.*.browser_>`__
-    is enabled.
-
 
 extractor.*.browser
 -------------------
 Type
     ``string``
 Default
-    * ``"firefox"``: ``artstation``, ``fanbox``, ``mangasee``, ``twitter``
+    * ``"firefox"``: ``artstation``, ``fanbox``, ``twitter``
     * ``null``: otherwise
 Example
+    * ``"firefox/128:linux"``
     * ``"chrome:macos"``
 Description
     Try to emulate a real browser (``firefox`` or ``chrome``)
@@ -694,10 +694,17 @@ Description
     Optionally, the operating system used in the ``User-Agent`` header can be
     specified after a ``:`` (``windows``, ``linux``, or ``macos``).
 
+    Supported browsers:
+
+    * ``firefox``
+    * ``firefox/140``
+    * ``firefox/128``
+    * ``chrome``
+    * ``chrome/138``
+    * ``chrome/111``
+
     Note:
-    This option overrides
-    `user-agent <extractor.*.user-agent_>`__
-    and sets custom
+    This option sets custom
     `headers <extractor.*.headers_>`__
     and
     `ciphers <extractor.*.ciphers_>`__
@@ -725,7 +732,8 @@ Description
 extractor.*.headers
 -------------------
 Type
-    ``object`` (`name` -> `value`)
+    * ``"string"``
+    * ``object`` (`name` -> `value`)
 Default
     .. code:: json
 
@@ -743,18 +751,23 @@ Description
 
     To disable sending a header, set its value to ``null``.
 
+    Set this option to ``"firefox"`` or ``"chrome"``
+    to use these browser's default headers.
+
 
 extractor.*.ciphers
 -------------------
 Type
-    ``list`` of ``strings``
+    * ``string``
+    * ``list`` of ``strings``
 Example
-    .. code:: json
+    * ``"firefox"``
+    * .. code:: json
 
-      ["ECDHE-ECDSA-AES128-GCM-SHA256",
-       "ECDHE-RSA-AES128-GCM-SHA256",
-       "ECDHE-ECDSA-CHACHA20-POLY1305",
-       "ECDHE-RSA-CHACHA20-POLY1305"]
+        ["ECDHE-ECDSA-AES128-GCM-SHA256",
+         "ECDHE-RSA-AES128-GCM-SHA256",
+         "ECDHE-ECDSA-CHACHA20-POLY1305",
+         "ECDHE-RSA-CHACHA20-POLY1305"]
 
 Description
     List of TLS/SSL cipher suites in
@@ -762,13 +775,16 @@ Description
     to be passed to
     `ssl.SSLContext.set_ciphers() <https://docs.python.org/3/library/ssl.html#ssl.SSLContext.set_ciphers>`__
 
+    Set this option to ``"firefox"`` or ``"chrome"``
+    to use these browser's default ciphers.
+
 
 extractor.*.tls12
 -----------------
 Type
     ``bool``
 Default
-    * ``false``: ``artstation``
+    * ``false``: ``artstation``, ``behance``
     * ``true``: otherwise
 Description
     Allow selecting TLS 1.2 cipher suites.
@@ -1229,6 +1245,22 @@ Description
 
     This value gets internally used as the |verify|_ parameter for the
     |requests.request()|_ method.
+
+
+extractor.*.truststore
+----------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    | Use a
+      `truststore <https://truststore.readthedocs.io/en/latest/>`__
+      ``SSLContext`` for verifying SSL/TLS certificates
+    | to make use of your system's native certificate stores
+      instead of relying on
+      `certifi <https://pypi.org/project/certifi/>`__
+      certificates.
 
 
 extractor.*.download
@@ -1738,7 +1770,7 @@ extractor.bunkr.endpoint
 Type
     ``string``
 Default
-    ``"/api/_001"``
+    ``"/api/_001_v2"``
 Description
     API endpoint for retrieving file URLs.
 
@@ -1843,12 +1875,12 @@ Type
 Default
     ``false``
 Example
-    * ``"generation,version"``
-    * ``["generation", "version"]``
+    * ``"generation,post,version"``
+    * ``["version", "generation"]``
 Description
-    Extract additional ``generation`` and ``version`` metadata.
+    Extract additional ``generation``, ``version``, and ``post`` metadata.
 
-    Note: This requires 1 additional HTTP request per image or video.
+    Note: This requires 1 or more additional API requests per image or video.
 
 
 extractor.civitai.nsfw
@@ -2012,6 +2044,16 @@ Description
     Note: Changing this setting is normally not necessary. When the value is
     greater than the per-page limit, gallery-dl will stop after the first
     batch. The value cannot be less than 1.
+
+
+extractor.dankefuerslesen.zip
+-----------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    Download each chapter as a single ZIP archive instead of individual images.
 
 
 extractor.deviantart.auto-watch
@@ -2388,6 +2430,17 @@ Description
     You can follow `this guide <https://github.com/Tyrrrz/DiscordChatExporter/blob/master/.docs/Token-and-IDs.md#how-to-get-a-user-token>`__ to get a token.
 
 
+extractor.dynastyscans.anthology.metadata
+-----------------------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    Extract ``alert``, ``description``, and ``status`` metadata
+    from an anthology's HTML page.
+
+
 extractor.[E621].metadata
 -------------------------
 Type
@@ -2483,8 +2536,23 @@ Type
 Default
     ``null``
 Description
-    Sets a custom image download limit and
-    stops extraction when it gets exceeded.
+    Set a custom image download limit and perform
+    `limits-action <extractor.exhentai.limits-action_>`__
+    when it gets exceeded.
+
+
+extractor.exhentai.limits-action
+--------------------------------
+Type
+    ``string``
+Default
+    ``"stop"``
+Description
+    Action to perform when the image limit is exceeded.
+
+    * `"stop"`: Stop the current extractor run.
+    * `"wait"`: Wait for user input.
+    * `"reset"`: Spend GP to reset your account's image limits.
 
 
 extractor.exhentai.metadata
@@ -2497,8 +2565,8 @@ Description
     Load extended gallery metadata from the
     `API <https://ehwiki.org/wiki/API#Gallery_Metadata>`_.
 
-    Adds ``archiver_key``, ``posted``, and ``torrents``.
-    Makes ``date`` and ``filesize`` more precise.
+    * Adds ``archiver_key``, ``posted``, and ``torrents``
+    * Provides exact ``date`` and ``filesize``
 
 
 extractor.exhentai.original
@@ -2521,6 +2589,8 @@ Description
     Selects an alternative source to download files from.
 
     * ``"hitomi"``:  Download the corresponding gallery from ``hitomi.la``
+    * ``"metadata"``:  Load only a gallery's metadata from the
+      `API <https://ehwiki.org/wiki/API#Gallery_Metadata>`_
 
 
 extractor.exhentai.tags
@@ -2588,6 +2658,17 @@ Description
     * ``"ytdl"``: Like ``true``, but let |ytdl| handle video
       extraction and download for YouTube, Vimeo, and SoundCloud embeds.
     * ``false``: Ignore embeds.
+
+
+extractor.fanbox.fee-max
+------------------------
+Type
+    ``integer``
+Description
+    Do not request API data or extract files from posts
+    that require a fee (``feeRequired``) greater than the specified amount.
+
+    Note: This option has no effect on individual post URLs.
 
 
 extractor.fanbox.metadata
@@ -3105,8 +3186,8 @@ Description
     Download video files.
 
 
-extractor.kemonoparty.archives
-------------------------------
+extractor.kemono.archives
+-------------------------
 Type
     ``bool``
 Default
@@ -3118,8 +3199,8 @@ Description
     Note: This requires 1 additional HTTP request per ``archives`` file.
 
 
-extractor.kemonoparty.comments
-------------------------------
+extractor.kemono.comments
+-------------------------
 Type
     ``bool``
 Default
@@ -3130,21 +3211,31 @@ Description
     Note: This requires 1 additional HTTP request per post.
 
 
-extractor.kemonoparty.duplicates
---------------------------------
+extractor.kemono.duplicates
+---------------------------
 Type
-    ``bool``
+    * ``bool``
+    * ``string``
+    * ``list`` of ``strings``
 Default
     ``false``
+Example
+    * ``"attachment,inline"``
+    * ``["file", "attachment"]``
 Description
     Controls how to handle duplicate files in a post.
 
-    * ``true``: Download duplicates
-    * ``false``: Ignore duplicates
+    ``true``
+        Download duplicates
+    ``false``
+        Ignore duplicates
+    any ``list`` or ``string``
+        | Download a duplicate file if its ``type`` is in the given list
+        | Ignore it otherwise
 
 
-extractor.kemonoparty.dms
--------------------------
+extractor.kemono.dms
+--------------------
 Type
     ``bool``
 Default
@@ -3153,8 +3244,8 @@ Description
     Extract a user's direct messages as ``dms`` metadata.
 
 
-extractor.kemonoparty.announcements
------------------------------------
+extractor.kemono.announcements
+------------------------------
 Type
     ``bool``
 Default
@@ -3163,8 +3254,8 @@ Description
     Extract a user's announcements as ``announcements`` metadata.
 
 
-extractor.kemonoparty.endpoint
-------------------------------
+extractor.kemono.endpoint
+-------------------------
 Type
     ``string``
 Default
@@ -3190,8 +3281,8 @@ Description
         | Provides more metadata, but might not return a creator's first/last posts.
 
 
-extractor.kemonoparty.favorites
--------------------------------
+extractor.kemono.favorites
+--------------------------
 Type
     ``string``
 Default
@@ -3202,8 +3293,8 @@ Description
     Available types are ``artist``, and ``post``.
 
 
-extractor.kemonoparty.files
----------------------------
+extractor.kemono.files
+----------------------
 Type
     ``list`` of ``strings``
 Default
@@ -3214,8 +3305,8 @@ Description
     Available types are ``file``, ``attachments``, and ``inline``.
 
 
-extractor.kemonoparty.max-posts
--------------------------------
+extractor.kemono.max-posts
+--------------------------
 Type
     ``integer``
 Default
@@ -3224,8 +3315,8 @@ Description
     Limit the number of posts to download.
 
 
-extractor.kemonoparty.metadata
-------------------------------
+extractor.kemono.metadata
+-------------------------
 Type
     ``bool``
 Default
@@ -3234,8 +3325,8 @@ Description
     Extract ``username`` and ``user_profile`` metadata.
 
 
-extractor.kemonoparty.revisions
--------------------------------
+extractor.kemono.revisions
+--------------------------
 Type
     * ``bool``
     * ``string``
@@ -3249,15 +3340,15 @@ Description
     Note: This requires 1 additional HTTP request per post.
 
 
-extractor.kemonoparty.order-revisions
--------------------------------------
+extractor.kemono.order-revisions
+--------------------------------
 Type
     ``string``
 Default
     ``"desc"``
 Description
     Controls the order in which
-    `revisions <extractor.kemonoparty.revisions_>`__
+    `revisions <extractor.kemono.revisions_>`__
     are returned.
 
     * ``"asc"``: Ascending order (oldest first)
@@ -3291,8 +3382,8 @@ Description
     the first in the list gets chosen (usually `mp3`).
 
 
-extractor.koharu.cbz
---------------------
+extractor.schalenetwork.cbz
+---------------------------
 Type
     ``bool``
 Default
@@ -3304,8 +3395,8 @@ Description
     to be downloaded as individual image files.
 
 
-extractor.koharu.format
------------------------
+extractor.schalenetwork.format
+------------------------------
 Type
     * ``string``
     * ``list`` of ``strings``
@@ -3320,8 +3411,8 @@ Description
     | ``"780"``, ``"980"``, ``"1280"``, ``"1600"``, ``"0"`` (original)
 
 
-extractor.koharu.tags
----------------------
+extractor.schalenetwork.tags
+----------------------------
 Type
     ``bool``
 Default
@@ -3399,9 +3490,14 @@ Description
 extractor.mangadex.ratings
 --------------------------
 Type
-    ``list`` of ``strings``
+    * ``string``
+    * ``list`` of ``strings``
 Default
     ``["safe", "suggestive", "erotica", "pornographic"]``
+Example
+    * ``"safe"``
+    * ``"erotica,suggestive"``
+    * ``["erotica", "suggestive"]``
 Description
     List of acceptable content ratings for returned chapters.
 
@@ -3488,6 +3584,29 @@ Description
     Your access token, necessary to fetch favorited notes.
 
 
+extractor.[misskey].include
+---------------------------
+Type
+    * ``string``
+    * ``list`` of ``strings``
+Default
+    ``"notes"``
+Example
+    * ``"avatar,background,notes"``
+    * ``["avatar", "background", "notes"]``
+Description
+    A (comma-separated) list of subcategories to include
+    when processing a user profile.
+
+    Possible values are
+    ``"info"``,
+    ``"avatar"``,
+    ``"background"``,
+    ``"notes"``,
+
+    It is possible to use ``"all"`` instead of listing all values separately.
+
+
 extractor.[misskey].renotes
 ---------------------------
 Type
@@ -3520,14 +3639,24 @@ Description
     Note: Not supported by all ``moebooru`` instances.
 
 
-extractor.naver.videos
-----------------------
+extractor.naver-blog.videos
+---------------------------
 Type
     ``bool``
 Default
     ``true``
 Description
     Download videos.
+
+
+extractor.naver-chzzk.offset
+----------------------------
+Type
+    ``integer``
+Default
+    ``0``
+Description
+    Custom ``offset`` starting value when paginating over comments.
 
 
 extractor.newgrounds.flash
@@ -3862,6 +3991,16 @@ Description
     Your account's `API key <https://pixeldrain.com/user/api_keys>`__
 
 
+extractor.pixeldrain.recursive
+------------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    Recursively download files from subfolders.
+
+
 extractor.pixiv.include
 -----------------------
 Type
@@ -3896,37 +4035,6 @@ Description
     from running ``gallery-dl oauth:pixiv`` (see OAuth_) or
     by using a third-party tool like
     `gppt <https://github.com/eggplants/get-pixivpy-token>`__.
-
-
-extractor.pixiv.novel.covers
-----------------------------
-Type
-    ``bool``
-Default
-    ``false``
-Description
-    Download cover images.
-
-
-extractor.pixiv.novel.embeds
-----------------------------
-Type
-    ``bool``
-Default
-    ``false``
-Description
-    Download embedded images.
-
-
-extractor.pixiv.novel.full-series
----------------------------------
-Type
-    ``bool``
-Default
-    ``false``
-Description
-    When downloading a novel being part of a series,
-    download all novels of that series.
 
 
 extractor.pixiv.metadata
@@ -4042,6 +4150,114 @@ Default
     ``true``
 Description
     Try to fetch ``limit_sanity_level`` works via web API.
+
+
+extractor.pixiv-novel.comments
+------------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    Fetch ``comments`` metadata.
+
+    Note: This requires 1 or more additional API requests per novel,
+    depending on the number of comments.
+
+
+extractor.pixiv-novel.covers
+----------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    Download cover images.
+
+
+extractor.pixiv-novel.embeds
+----------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    Download embedded images.
+
+
+extractor.pixiv-novel.full-series
+---------------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    When downloading a novel being part of a series,
+    download all novels of that series.
+
+
+extractor.pixiv-novel.max-posts
+-------------------------------
+Type
+    ``integer``
+Default
+    ``0``
+Description
+    When downloading multiple novels,
+    this sets the maximum number of novels to get.
+
+    A value of ``0`` means no limit.
+
+
+extractor.pixiv-novel.metadata
+------------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    Fetch extended ``user`` metadata.
+
+
+extractor.pixiv-novel.metadata-bookmark
+---------------------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    For novels bookmarked by
+    `your own account <extractor.pixiv-novel.refresh-token_>`__,
+    fetch bookmark tags as ``tags_bookmark`` metadata.
+
+    Note: This requires 1 additional API request per bookmarked post.
+
+
+extractor.pixiv-novel.refresh-token
+-----------------------------------
+Type
+    ``string``
+Description
+    The ``refresh-token`` value you get
+    from running ``gallery-dl oauth:pixiv`` (see OAuth_) or
+    by using a third-party tool like
+    `gppt <https://github.com/eggplants/get-pixivpy-token>`__.
+
+    This can be the same value as `extractor.pixiv.refresh-token`_
+
+
+extractor.pixiv-novel.tags
+--------------------------
+Type
+    ``string``
+Default
+    ``"japanese"``
+Description
+    Controls the ``tags`` metadata field.
+
+    * `"japanese"`: List of Japanese tags
+    * `"translated"`: List of translated tags
+    * `"original"`: Unmodified list with both Japanese and translated tags
 
 
 extractor.plurk.comments
@@ -4284,19 +4500,6 @@ Description
     When more than one format is given, the first available one is selected.
 
 
-extractor.sankaku.id-format
----------------------------
-Type
-    ``string``
-Default
-    ``"numeric"``
-Description
-    Format of ``id`` metadata fields.
-
-    * ``"alphanumeric"`` or ``"alnum"``: 11-character alphanumeric IDs (``y0abGlDOr2o``)
-    * ``"numeric"`` or ``"legacy"``: numeric IDs (``360451``)
-
-
 extractor.sankaku.refresh
 -------------------------
 Type
@@ -4305,6 +4508,39 @@ Default
     ``false``
 Description
     Refresh download URLs before they expire.
+
+
+extractor.sankaku.tags
+----------------------
+Type
+    * ``bool``
+    * ``string``
+Default
+    ``false``
+Description
+    | Group ``tags`` by type and
+      provide them as ``tags_TYPE`` and ``tag_string_TYPE`` metadata fields,
+    | for example ``tags_artist`` and ``tags_character``.
+
+    ``true``
+        Enable general ``tags`` categories
+
+        Requires:
+
+        * 1 additional API request per 100 tags per post
+
+    ``"extended"``
+        Group ``tags`` by the new, extended tag category system
+        used on ``chan.sankakucomplex.com``
+
+        Requires:
+
+        * 1 additional HTTP request per post
+        * logged-in `cookies <extractor.*.cookies_>`__
+          to fetch full ``tags`` category data
+
+    ``false``
+        Disable ``tags`` categories
 
 
 extractor.sankakucomplex.embeds
@@ -4325,6 +4561,16 @@ Default
     ``true``
 Description
     Download videos.
+
+
+extractor.sexcom.gifs
+---------------------
+Type
+    ``bool``
+Default
+    ``true``
+Description
+    Download animated images as ``.gif`` instead of ``.webp``
 
 
 extractor.skeb.article
@@ -5431,6 +5677,28 @@ Description
         | - Omit an extension to leave its URLs unchanged
 
 
+extractor.webtoons.banners
+--------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    Download the active comic's ``banner``.
+
+
+extractor.webtoons.thumbnails
+-----------------------------
+Type
+    ``bool``
+Default
+    ``false``
+Description
+    Download the active episode's ``thumbnail``.
+
+    Useful for creating CBZ archives with actual source thumbnails.
+
+
 extractor.weibo.gifs
 --------------------
 Type
@@ -5593,10 +5861,22 @@ Type
 Default
     ``true``
 Description
-    Enables the use of |ytdl's| ``generic`` extractor.
+    Enables the use of |ytdl's| ``Generic`` extractor.
 
     Set this option to ``"force"`` for the same effect as
     ``--force-generic-extractor``.
+
+
+extractor.ytdl.generic-category
+-------------------------------
+Type
+    ``bool``
+Default
+    ``true``
+Description
+    When using |ytdl's| ``Generic`` extractor,
+    change `category` to ``"ytdl-generic"`` and
+    set `subcategory` to the input URL's domain.
 
 
 extractor.ytdl.logging
@@ -5858,17 +6138,25 @@ Description
 downloader.*.rate
 -----------------
 Type
-    ``string``
+    * ``string``
+    * ``list`` with 2 ``strings``
 Default
     ``null``
 Example
-    ``"32000"``, ``"500k"``, ``"2.5M"``
+    * ``"32000"``
+    * ``"500k"``
+    * ``"1M - 2.5M"``
+    * ``["1M", "2.5M"]``
 Description
     Maximum download rate in bytes per second.
 
     Possible values are valid integer or floating-point numbers
     optionally followed by one of ``k``, ``m``. ``g``, ``t``, or ``p``.
     These suffixes are case-insensitive.
+
+    If given as a range, the maximum download rate
+    will be randomly chosen before each download.
+    (see `random.randint() <https://docs.python.org/3/library/random.html#random.randint>`_)
 
 
 downloader.*.retries
@@ -6024,6 +6312,20 @@ Description
     instead of downloading a potentially broken file.
 
 
+downloader.http.validate-html
+-----------------------------
+Type
+    ``bool``
+Default
+    ``true``
+Description
+    Check for unexpected HTML responses.
+
+    Fail file downloads with a ``text/html``
+    `Content-Type header <https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Type>`__
+    when expecting a media file instead.
+
+
 downloader.ytdl.cmdline-args
 ----------------------------
 Type
@@ -6177,8 +6479,8 @@ Description
     * ``"pipe"``: Suitable for piping to other processes or files
     * ``"terminal"``: Suitable for the standard Windows console
     * ``"color"``: Suitable for terminals that understand ANSI escape codes and colors
-    * ``"auto"``: ``"terminal"`` on Windows with `output.ansi`_ disabled,
-      ``"color"`` otherwise.
+    * ``"auto"``: ``"pipe"`` if not on a TTY, ``"terminal"`` on Windows with
+      `output.ansi`_ disabled, ``"color"`` otherwise.
 
     | It is possible to use custom output format strings
       by setting this option to an ``object`` and specifying
@@ -6585,6 +6887,25 @@ Description
       Each element of this list is treated as a `format string`_ using
       the files' metadata as well as ``{_path}``, ``{_directory}``,
       and ``{_filename}``.
+
+
+exec.commands
+-------------
+Type
+    ``list`` of `commands <exec.command_>`__
+Example
+    .. code:: json
+
+        [
+            ["echo", "{user[account]}", "{id}"]
+            ["magick", "convert" "{_path}",  "\fF {_path.rpartition('.')[0]}.png"],
+            "rm {}",
+        ]
+Description
+    Multiple `commands <exec.command_>`__ to run in succession.
+
+    All `commands <exec.command_>`__ after the first returning with a non-zero
+    exit status will not be run.
 
 
 exec.event
@@ -7438,6 +7759,62 @@ Description
     Note: ``null`` references internal extractors defined in
     `extractor/__init__.py <https://github.com/mikf/gallery-dl/blob/master/gallery_dl/extractor/__init__.py#L12>`__
     or by `extractor.modules`_.
+
+
+extractor.category-map
+----------------------
+Type
+    * ``object`` (`category` -> `category`)
+    * ``string``
+Example
+    .. code:: json
+
+        {
+            "danbooru": "booru",
+            "gelbooru": "booru"
+        }
+Description
+    A JSON object mapping category names to their replacements.
+
+    Special values:
+
+    * ``"compat"``
+        .. code:: json
+
+            {
+                "coomer"       : "coomerparty",
+                "kemono"       : "kemonoparty",
+                "schalenetwork": "koharu",
+                "naver-chzzk"  : "chzzk",
+                "naver-blog"   : "naver",
+                "naver-webtoon": "naverwebtoon",
+                "pixiv-novel"  : "pixiv",
+                "pixiv-novel:novel"   : ["pixiv", "novel"],
+                "pixiv-novel:user"    : ["pixiv", "novel-user"],
+                "pixiv-novel:series"  : ["pixiv", "novel-series"],
+                "pixiv-novel:bookmark": ["pixiv", "novel-bookmark"]
+            }
+
+
+extractor.config-map
+--------------------
+Type
+    ``object`` (`category` -> `category`)
+Default
+    .. code:: json
+
+        {
+            "coomerparty" : "coomer",
+            "kemonoparty" : "kemono",
+            "koharu"      : "schalenetwork",
+            "chzzk"       : "naver-chzzk",
+            "naver"       : "naver-blog",
+            "naverwebtoon": "naver-webtoon",
+            "pixiv"       : "pixiv-novel"
+        }
+Description
+    Duplicate the configuration settings of extractor `categories`
+    to other names.
 
 
 globals
